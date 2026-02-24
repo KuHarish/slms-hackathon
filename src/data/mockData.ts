@@ -26,6 +26,21 @@ export const currentUser: User = {
 };
 
 // ============================================
+// Librarian User
+// ============================================
+export const librarianUser: User = {
+  id: 'lib1',
+  name: 'Dr. Sarah Mitchell',
+  email: 'sarah.mitchell@university.edu',
+  role: 'librarian',
+  avatarUrl: '',
+  tokens: 0,
+  badges: [badges[3]],
+  joinedAt: '2023-01-10',
+  borrowCount: 0,
+};
+
+// ============================================
 // Books
 // ============================================
 export const books: Book[] = [
