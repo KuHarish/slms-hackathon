@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, User, Users, Bell, Search,
-  Menu, X, BookMarked, LogOut, Sun, Moon, Shield, ArrowLeftRight
+  Menu, X, BookMarked, LogOut, Sun, Moon, Shield, ArrowLeftRight, Crown
 } from 'lucide-react';
 import { notifications } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useNextRole } from '@/contexts/AuthContext';
 
 const allNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['student', 'librarian', 'admin'] as const },
@@ -14,10 +14,12 @@ const allNavItems = [
   { path: '/community', label: 'Community', icon: Users, roles: ['student', 'librarian', 'admin'] as const },
   { path: '/profile', label: 'Profile', icon: User, roles: ['student', 'admin'] as const },
   { path: '/librarian', label: 'Librarian', icon: Shield, roles: ['librarian', 'admin'] as const },
+  { path: '/admin', label: 'Admin', icon: Crown, roles: ['admin'] as const },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, switchRole, hasRole } = useAuth();
+  const next = useNextRole();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
@@ -81,11 +83,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <button
-            onClick={() => switchRole(user.role === 'student' ? 'librarian' : 'student')}
+            onClick={() => switchRole(next)}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            Switch to {user.role === 'student' ? 'Librarian' : 'Student'}
+            Switch to {next.charAt(0).toUpperCase() + next.slice(1)}
           </button>
         </div>
       </aside>

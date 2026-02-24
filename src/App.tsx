@@ -12,6 +12,7 @@ import BookDetail from "@/pages/BookDetail";
 import Profile from "@/pages/Profile";
 import Community from "@/pages/Community";
 import LibrarianDashboard from "@/pages/LibrarianDashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,11 @@ const App = () => (
               <Route path="/librarian" element={
                 <RoleGuard allowedRoles={['librarian']}>
                   <LibrarianDashboard />
+                </RoleGuard>
+              } />
+              <Route path="/admin" element={
+                <RoleGuard allowedRoles={['admin']}>
+                  <AdminDashboard />
                 </RoleGuard>
               } />
               <Route path="*" element={<NotFound />} />
