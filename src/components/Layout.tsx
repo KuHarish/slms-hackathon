@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, User, Users, Bell, Search,
-  Menu, X, BookMarked, LogOut, Sun, Moon
+  Menu, X, BookMarked, LogOut, Sun, Moon, Shield
 } from 'lucide-react';
 import { notifications } from '@/data/mockData';
 import { currentUser } from '@/data/mockData';
@@ -13,6 +13,7 @@ const navItems = [
   { path: '/books', label: 'Catalog', icon: BookOpen },
   { path: '/community', label: 'Community', icon: Users },
   { path: '/profile', label: 'Profile', icon: User },
+  { path: '/librarian', label: 'Librarian', icon: Shield },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
