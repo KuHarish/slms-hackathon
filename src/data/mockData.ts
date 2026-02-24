@@ -138,11 +138,38 @@ export const reviews: Review[] = [
 ];
 
 // ============================================
+// All Students (for librarian view)
+// ============================================
+export const allStudents: User[] = [
+  currentUser,
+  { id: 'u2', name: 'Priya Sharma', email: 'priya@university.edu', role: 'student', tokens: 85, badges: [badges[0]], joinedAt: '2024-10-12', borrowCount: 9 },
+  { id: 'u3', name: 'Jordan Lee', email: 'jordan@university.edu', role: 'student', tokens: 210, badges: [badges[0], badges[1], badges[2]], joinedAt: '2024-08-20', borrowCount: 22 },
+  { id: 'u4', name: 'Sam Chen', email: 'sam@university.edu', role: 'student', tokens: 45, badges: [], joinedAt: '2025-01-15', borrowCount: 5 },
+  { id: 'u5', name: 'Maya Johnson', email: 'maya@university.edu', role: 'student', tokens: 60, badges: [badges[0]], joinedAt: '2025-03-01', borrowCount: 7 },
+];
+
+// ============================================
+// All Borrow Records (multi-student for librarian)
+// ============================================
+export const allBorrowRecords: BorrowRecord[] = [
+  ...borrowRecords,
+  { id: 'br6', userId: 'u2', bookId: 'bk2', borrowedAt: '2026-01-15', dueDate: '2026-02-15', fine: 0, status: 'overdue' },
+  { id: 'br7', userId: 'u2', bookId: 'bk6', borrowedAt: '2026-02-01', dueDate: '2026-03-01', fine: 0, status: 'active' },
+  { id: 'br8', userId: 'u3', bookId: 'bk8', borrowedAt: '2026-01-05', dueDate: '2026-02-05', fine: 0, status: 'overdue' },
+  { id: 'br9', userId: 'u4', bookId: 'bk5', borrowedAt: '2026-02-10', dueDate: '2026-03-10', fine: 0, status: 'active' },
+  { id: 'br10', userId: 'u5', bookId: 'bk7', borrowedAt: '2026-01-20', dueDate: '2026-02-20', fine: 0, status: 'overdue' },
+  { id: 'br11', userId: 'u5', bookId: 'bk1', borrowedAt: '2026-02-05', dueDate: '2026-03-05', fine: 0, status: 'active' },
+];
+
+// ============================================
 // Book Requests
 // ============================================
 export const bookRequests: BookRequest[] = [
   { id: 'req1', userId: 'u1', userName: 'Alex Rivera', title: 'Atomic Habits', author: 'James Clear', reason: 'Very popular self-improvement book, many students have requested it.', status: 'approved', createdAt: '2026-01-05' },
   { id: 'req2', userId: 'u1', userName: 'Alex Rivera', title: 'The Pragmatic Programmer', author: 'David Thomas', reason: 'Essential reading for CS students.', status: 'pending', createdAt: '2026-02-15' },
+  { id: 'req3', userId: 'u3', userName: 'Jordan Lee', title: 'Designing Data-Intensive Applications', author: 'Martin Kleppmann', reason: 'Best book on distributed systems, needed for advanced CS course.', status: 'pending', createdAt: '2026-02-18' },
+  { id: 'req4', userId: 'u5', userName: 'Maya Johnson', title: 'The Art of War', author: 'Sun Tzu', reason: 'Classic strategy text useful for business and philosophy courses.', status: 'pending', createdAt: '2026-02-20' },
+  { id: 'req5', userId: 'u2', userName: 'Priya Sharma', title: 'Eloquent JavaScript', author: 'Marijn Haverbeke', reason: 'Free online but having physical copies in the library would help students.', status: 'rejected', createdAt: '2026-01-28' },
 ];
 
 // ============================================

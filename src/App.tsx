@@ -9,6 +9,7 @@ import Books from "@/pages/Books";
 import BookDetail from "@/pages/BookDetail";
 import Profile from "@/pages/Profile";
 import Community from "@/pages/Community";
+import LibrarianDashboard from "@/pages/LibrarianDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/books/:id" element={<BookDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/librarian" element={<LibrarianDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
