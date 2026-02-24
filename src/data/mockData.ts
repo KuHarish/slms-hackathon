@@ -41,6 +41,21 @@ export const librarianUser: User = {
 };
 
 // ============================================
+// Admin User
+// ============================================
+export const adminUser: User = {
+  id: 'adm1',
+  name: 'Prof. James Carter',
+  email: 'james.carter@university.edu',
+  role: 'admin',
+  avatarUrl: '',
+  tokens: 0,
+  badges: [badges[2], badges[3]],
+  joinedAt: '2022-06-01',
+  borrowCount: 0,
+};
+
+// ============================================
 // Books
 // ============================================
 export const books: Book[] = [
