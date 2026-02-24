@@ -3,24 +3,26 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, User, Users, Bell, Search,
-  Menu, X, BookMarked, LogOut, Sun, Moon, Shield
+  Menu, X, BookMarked, LogOut, Sun, Moon, Shield, ArrowLeftRight
 } from 'lucide-react';
 import { notifications } from '@/data/mockData';
-import { currentUser } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/books', label: 'Catalog', icon: BookOpen },
-  { path: '/community', label: 'Community', icon: Users },
-  { path: '/profile', label: 'Profile', icon: User },
-  { path: '/librarian', label: 'Librarian', icon: Shield },
+const allNavItems = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['student', 'librarian', 'admin'] as const },
+  { path: '/books', label: 'Catalog', icon: BookOpen, roles: ['student', 'librarian', 'admin'] as const },
+  { path: '/community', label: 'Community', icon: Users, roles: ['student', 'librarian', 'admin'] as const },
+  { path: '/profile', label: 'Profile', icon: User, roles: ['student', 'admin'] as const },
+  { path: '/librarian', label: 'Librarian', icon: Shield, roles: ['librarian', 'admin'] as const },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const { user, switchRole, hasRole } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
+  const navItems = allNavItems.filter(item => (item.roles as readonly string[]).includes(user.role));
 
   const toggleDark = () => {
     setDark(!dark);
@@ -68,16 +70,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
           <div className="flex items-center gap-3 px-2">
             <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-primary">
-              {currentUser.name.split(' ').map(n => n[0]).join('')}
+              {user.name.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
-              <p className="text-xs text-sidebar-foreground/50">{currentUser.tokens} tokens</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
+              <p className="text-xs text-sidebar-foreground/50 capitalize">{user.role}</p>
             </div>
           </div>
+          <button
+            onClick={() => switchRole(user.role === 'student' ? 'librarian' : 'student')}
+            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            Switch to {user.role === 'student' ? 'Librarian' : 'Student'}
+          </button>
         </div>
       </aside>
 
@@ -159,7 +168,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <Link to="/profile" className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground">
-            {currentUser.name.split(' ').map(n => n[0]).join('')}
+            {user.name.split(' ').map(n => n[0]).join('')}
           </Link>
         </header>
 
