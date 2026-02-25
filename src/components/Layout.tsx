@@ -6,7 +6,7 @@ import {
   Menu, X, BookMarked, LogOut, Sun, Moon, Shield, ArrowLeftRight, Crown
 } from 'lucide-react';
 import { notifications } from '@/data/mockData';
-import { useAuth, useNextRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const allNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['student', 'librarian', 'admin'] as const },
@@ -18,13 +18,12 @@ const allNavItems = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { user, switchRole, hasRole } = useAuth();
-  const next = useNextRole();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
-  const navItems = allNavItems.filter(item => (item.roles as readonly string[]).includes(user.role));
+  const navItems = allNavItems.filter(item => user && (item.roles as readonly string[]).includes(user.role));
 
   const toggleDark = () => {
     setDark(!dark);
@@ -73,21 +72,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-sidebar-border space-y-3">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-primary">
-              {user.name.split(' ').map(n => n[0]).join('')}
+          {user && (
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-primary">
+                {user.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
+                <p className="text-xs text-sidebar-foreground/50 capitalize">{user.role}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
-              <p className="text-xs text-sidebar-foreground/50 capitalize">{user.role}</p>
-            </div>
-          </div>
+          )}
           <button
-            onClick={() => switchRole(next)}
+            onClick={logout}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
-            Switch to {next.charAt(0).toUpperCase() + next.slice(1)}
+            <LogOut className="w-3.5 h-3.5" />
+            Sign Out
           </button>
         </div>
       </aside>
