@@ -10,7 +10,7 @@ interface Props {
 export default function RoleGuard({ children, allowedRoles }: Props) {
   const { user } = useAuth();
 
-  if (!allowedRoles.includes(user.role) && user.role !== 'admin') {
+  if (!user || (!allowedRoles.includes(user.role) && user.role !== 'admin')) {
     return <Navigate to="/" replace />;
   }
 
