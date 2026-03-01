@@ -4,11 +4,16 @@ import {
   Coins, Award, BookOpen, Clock, ArrowUpRight, ArrowDownRight,
   CheckCircle, AlertTriangle, Send
 } from 'lucide-react';
-import { currentUser, borrowRecords, books, tokenTransactions, bookRequests, badges, calculateFine } from '@/data/mockData';
+import { books, borrowRecords, tokenTransactions, bookRequests, badges, calculateFine } from '@/data/mockData';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Profile() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<'history' | 'tokens' | 'requests'>('history');
+
+  // Fallback to empty array if user or booksBorrowed is missing
+  const activeBooksBorrowed = user?.booksBorrowed || [];
 
   const history = borrowRecords.map(r => ({
     ...r,
@@ -26,23 +31,23 @@ export default function Profile() {
       >
         <div className="flex items-center gap-5">
           <div className="w-16 h-16 rounded-full gradient-gold flex items-center justify-center text-xl font-bold text-primary">
-            {currentUser.name.split(' ').map(n => n[0]).join('')}
+            {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
           </div>
           <div className="flex-1">
             <h1 className="font-display text-2xl text-card-foreground flex items-center gap-3">
-              {currentUser.name}
-              {currentUser.badges.map(b => (
-                <span key={b.id} className="text-sm px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground" title={b.description}>
+              {user?.name || 'User Name'}
+              {(user?.badges || []).map((b: any, index: number) => (
+                <span key={index} className="text-sm px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground" title={b.description || ''}>
                   {b.icon} {b.name}
                 </span>
               ))}
             </h1>
-            <p className="text-muted-foreground">{currentUser.email} · {currentUser.role}</p>
+            <p className="text-muted-foreground">{user?.email || ''} · {user?.role || 'user'}</p>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 text-2xl font-bold text-gold">
               <Coins className="w-6 h-6" />
-              {currentUser.tokens}
+              {user?.tokens || 0}
             </div>
             <p className="text-xs text-muted-foreground">reward tokens</p>
           </div>
@@ -50,15 +55,15 @@ export default function Profile() {
 
         <div className="mt-5 grid grid-cols-3 gap-4 text-center border-t border-border pt-5">
           <div>
-            <p className="text-xl font-bold text-card-foreground">{currentUser.borrowCount}</p>
+            <p className="text-xl font-bold text-card-foreground">{user?.totalBorrowedCount || 0}</p>
             <p className="text-xs text-muted-foreground">Books Borrowed</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-card-foreground">{currentUser.badges.length}</p>
+            <p className="text-xl font-bold text-card-foreground">{user?.badges?.length || 0}</p>
             <p className="text-xs text-muted-foreground">Badges</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-card-foreground">{new Date(currentUser.joinedAt).getFullYear()}</p>
+            <p className="text-xl font-bold text-card-foreground">{user?.joinedAt ? new Date(user.joinedAt).getFullYear() : new Date().getFullYear()}</p>
             <p className="text-xs text-muted-foreground">Member Since</p>
           </div>
         </div>
@@ -71,8 +76,8 @@ export default function Profile() {
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {badges.map(badge => {
-            const earned = currentUser.tokens >= badge.requiredTokens;
-            const progress = Math.min((currentUser.tokens / badge.requiredTokens) * 100, 100);
+            const earned = (user?.tokens || 0) >= badge.requiredTokens;
+            const progress = Math.min(((user?.tokens || 0) / badge.requiredTokens) * 100, 100);
             return (
               <div key={badge.id} className={`p-4 rounded-lg border text-center ${earned ? 'border-accent bg-accent/5' : 'border-border'}`}>
                 <span className="text-2xl">{badge.icon}</span>
@@ -127,7 +132,7 @@ export default function Profile() {
                 </div>
                 <div className="text-right">
                   {record.fine > 0 && (
-                    <p className="text-sm text-destructive font-semibold">${record.fine.toFixed(2)} fine</p>
+                    <p className="text-sm text-destructive font-semibold">₹{record.fine.toFixed(2)} fine</p>
                   )}
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                     record.status === 'returned' ? 'bg-success/10 text-success' :

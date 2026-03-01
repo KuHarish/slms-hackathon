@@ -1,25 +1,13 @@
 const express = require("express");
 const router = express.Router();
+const { getAllBooks, createBook, updateBook } = require("../controllers/bookController");
+const { protect, admin } = require("../middleware/authMiddleware");
 
-const Book = require("../models/Book");
+router.route("/")
+  .get(getAllBooks)
+  .post(protect, admin, createBook);
 
-router.post("/", async (req, res) => {
-    try {
-        const book = await Book.create(req.body);
-        res.status(201).json(book);
-    } catch (error) {
-        res.status(500).json({ message: error.message});
-    }
-});
-
-//Get All Books
-router.get("/", async (req, res) => {
-    try {
-        const books = await Book.find();
-        res.json(books);
-    } catch (error) {
-        res.status(500).json({ message: error.message});
-    }
-});
+router.route("/:id")
+  .put(protect, admin, updateBook);
 
 module.exports = router;

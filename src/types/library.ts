@@ -3,7 +3,7 @@
 // Ready for Prisma/TypeORM integration
 // ============================================
 
-export type UserRole = 'student' | 'librarian' | 'admin';
+export type UserRole = 'user' | 'admin';
 
 export interface User {
   id: string;
@@ -11,10 +11,16 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl?: string;
-  tokens: number;
-  badges: Badge[];
+  badges: string[] | any[];
   joinedAt: string;
+  // Dynamic backend bindings
+  booksBorrowed?: string[] | any[];
   borrowCount: number;
+  totalBorrowedCount?: number;
+  overdueBooksCount?: number;
+  tokens: number;
+  fineAmount?: number;
+  lastBorrowDate?: string;
 }
 
 export interface Book {

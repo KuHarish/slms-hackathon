@@ -12,9 +12,10 @@ import Books from "@/pages/Books";
 import BookDetail from "@/pages/BookDetail";
 import Profile from "@/pages/Profile";
 import Community from "@/pages/Community";
-import LibrarianDashboard from "@/pages/LibrarianDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import SignupUser from "./pages/SignupUser";
+import SignupAdmin from "./pages/SignupAdmin";
 
 const queryClient = new QueryClient();
 
@@ -33,11 +34,7 @@ function AuthenticatedRoutes() {
         <Route path="/books/:id" element={<BookDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/community" element={<Community />} />
-        <Route path="/librarian" element={
-          <RoleGuard allowedRoles={['librarian']}>
-            <LibrarianDashboard />
-          </RoleGuard>
-        } />
+
         <Route path="/admin" element={
           <RoleGuard allowedRoles={['admin']}>
             <AdminDashboard />
@@ -55,6 +52,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/signup-user" element={isAuthenticated ? <Navigate to="/" replace /> : <SignupUser />} />
+      <Route path="/signup-admin" element={isAuthenticated ? <Navigate to="/" replace /> : <SignupAdmin />} />
       <Route path="/*" element={<AuthenticatedRoutes />} />
     </Routes>
   );

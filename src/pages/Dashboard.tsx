@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   BookOpen, Clock, AlertTriangle, TrendingUp,
   Star, ArrowRight, Coins, Bell
 } from 'lucide-react';
-import { books, borrowRecords, notifications, currentUser, calculateFine } from '@/data/mockData';
+import { books, borrowRecords, calculateFine } from '@/data/mockData';
 import BookCard from '@/components/BookCard';
 
 const statCards = [
   {
     label: 'Books Borrowed',
     value: borrowRecords.filter(r => r.status !== 'returned').length,
-    total: currentUser.borrowCount,
+    total: 0, // This will be updated dynamically
     icon: BookOpen,
     color: 'bg-primary text-primary-foreground',
   },
@@ -24,19 +25,39 @@ const statCards = [
   },
   {
     label: 'Tokens',
-    value: currentUser.tokens,
+    value: 0, // This will be updated dynamically
     icon: Coins,
     color: 'gradient-gold text-primary',
   },
   {
     label: 'Unread Alerts',
-    value: notifications.filter(n => !n.read).length,
+    value: 0, // This will be updated dynamically
     icon: Bell,
     color: 'bg-info text-info-foreground',
   },
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      const token = localStorage.getItem('token');
+      fetch('http://localhost:3000/api/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setNotifications(data))
+      .catch(console.error);
+    }
+  }, [user]);
+
+  // Update statCards with user data
+  statCards[0].total = user?.borrowCount || 0;
+  statCards[2].value = user?.tokens || 0;
+  statCards[3].value = notifications.filter(n => !n.isRead).length;
+
   const activeRecords = borrowRecords
     .filter(r => r.status !== 'returned')
     .map(r => ({
@@ -49,12 +70,15 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-3xl lg:text-4xl text-foreground">
-          Welcome back, {currentUser.name.split(' ')[0]}
-        </h1>
-        <p className="text-muted-foreground mt-1">Here's what's happening with your library today.</p>
+      {/* Header Greeting */}
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl lg:text-4xl text-foreground">
+            Welcome back, {user?.name?.split(' ')[0] || 'Guest'}
+          </h1>
+          <p className="text-muted-foreground mt-1">Here's your library activity summary for today.</p>
+        </div>
+        <div className="hidden sm:flex items-center gap-2"></div>
       </div>
 
       {/* Stats Grid */}
@@ -107,10 +131,11 @@ export default function Dashboard() {
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Due {new Date(record.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    {record.status === 'overdue' && (
-                      <p className="text-sm text-destructive font-semibold mt-1">
-                        ${record.fine.toFixed(2)} fine
-                      </p>
+                    {record.fine > 0 && (
+                      <span className="text-destructive font-medium ml-3 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        ₹{record.fine.toFixed(2)} fine
+                      </span>
                     )}
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -131,36 +156,38 @@ export default function Dashboard() {
       <section>
         <h2 className="font-display text-xl text-foreground mb-4">Recent Notifications</h2>
         <div className="space-y-3">
-          {notifications.slice(0, 3).map((notif, i) => (
-            <motion.div
-              key={notif.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`bg-card rounded-xl border p-4 shadow-card flex items-start gap-3 ${
-                !notif.read ? 'border-accent' : 'border-border'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                notif.type === 'overdue' ? 'bg-destructive/10 text-destructive' :
-                notif.type === 'due_soon' ? 'bg-warning/10 text-warning' :
-                notif.type === 'badge_earned' ? 'gradient-gold' :
-                'bg-success/10 text-success'
-              }`}>
-                {notif.type === 'overdue' ? <AlertTriangle className="w-4 h-4" /> :
-                 notif.type === 'due_soon' ? <Clock className="w-4 h-4" /> :
-                 notif.type === 'badge_earned' ? <Star className="w-4 h-4" /> :
-                 <Bell className="w-4 h-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-card-foreground">{notif.title}</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{notif.message}</p>
-              </div>
-              {!notif.read && (
-                <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0 mt-2" />
-              )}
-            </motion.div>
-          ))}
+          {notifications.length === 0 ? (
+            <div className="bg-card rounded-xl border border-border p-6 shadow-card text-center text-muted-foreground">
+              No recent notifications
+            </div>
+          ) : (
+            notifications.slice(0, 3).map((notif, i) => (
+              <motion.div
+                key={notif._id || notif.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`bg-card rounded-xl border p-4 shadow-card flex items-start gap-3 ${
+                  !notif.isRead ? 'border-accent' : 'border-border'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  notif.type === 'error' ? 'bg-destructive/10 text-destructive' :
+                  notif.type === 'warning' ? 'bg-warning/10 text-warning' :
+                  notif.type === 'success' ? 'bg-success/10 text-success' : 'bg-info/10 text-info'
+                }`}>
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-card-foreground">{notif.title}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{notif.message}</p>
+                </div>
+                {!notif.isRead && (
+                  <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0 mt-2" />
+                )}
+              </motion.div>
+            ))
+          )}
         </div>
       </section>
 

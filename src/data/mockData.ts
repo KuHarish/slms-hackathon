@@ -17,27 +17,12 @@ export const currentUser: User = {
   id: 'u1',
   name: 'Alex Rivera',
   email: 'alex@university.edu',
-  role: 'student',
+  role: 'user',
   avatarUrl: '',
   tokens: 120,
   badges: [badges[0], badges[1]],
   joinedAt: '2024-09-01',
   borrowCount: 14,
-};
-
-// ============================================
-// Librarian User
-// ============================================
-export const librarianUser: User = {
-  id: 'lib1',
-  name: 'Dr. Sarah Mitchell',
-  email: 'sarah.mitchell@university.edu',
-  role: 'librarian',
-  avatarUrl: '',
-  tokens: 0,
-  badges: [badges[3]],
-  joinedAt: '2023-01-10',
-  borrowCount: 0,
 };
 
 // ============================================
@@ -170,12 +155,12 @@ export const reviews: Review[] = [
 // ============================================
 // All Students (for librarian view)
 // ============================================
-export const allStudents: User[] = [
+export const allUsers: User[] = [
   currentUser,
-  { id: 'u2', name: 'Priya Sharma', email: 'priya@university.edu', role: 'student', tokens: 85, badges: [badges[0]], joinedAt: '2024-10-12', borrowCount: 9 },
-  { id: 'u3', name: 'Jordan Lee', email: 'jordan@university.edu', role: 'student', tokens: 210, badges: [badges[0], badges[1], badges[2]], joinedAt: '2024-08-20', borrowCount: 22 },
-  { id: 'u4', name: 'Sam Chen', email: 'sam@university.edu', role: 'student', tokens: 45, badges: [], joinedAt: '2025-01-15', borrowCount: 5 },
-  { id: 'u5', name: 'Maya Johnson', email: 'maya@university.edu', role: 'student', tokens: 60, badges: [badges[0]], joinedAt: '2025-03-01', borrowCount: 7 },
+  { id: 'u2', name: 'Priya Sharma', email: 'priya@university.edu', role: 'user', tokens: 85, badges: [badges[0]], joinedAt: '2024-10-12', borrowCount: 9 },
+  { id: 'u3', name: 'Jordan Lee', email: 'jordan@university.edu', role: 'user', tokens: 210, badges: [badges[0], badges[1], badges[2]], joinedAt: '2024-08-20', borrowCount: 22 },
+  { id: 'u4', name: 'Sam Chen', email: 'sam@university.edu', role: 'user', tokens: 45, badges: [], joinedAt: '2025-01-15', borrowCount: 5 },
+  { id: 'u5', name: 'Maya Johnson', email: 'maya@university.edu', role: 'user', tokens: 60, badges: [badges[0]], joinedAt: '2025-03-01', borrowCount: 7 },
 ];
 
 // ============================================
@@ -215,10 +200,12 @@ export const tokenTransactions: TokenTransaction[] = [
 
 // ============================================
 // Fine Calculation Logic
-// ============================================
-export const FINE_PER_DAY = 0.50; // $0.50 per day
+// Settings config
+export const MAX_BORROW_DAYS = 14;
+export const FINE_PER_DAY = 0.50; // ₹0.50 per day
+export const MAX_BORROW_LIMIT = 5;
 export const TOKENS_PER_EARLY_DAY = 3;
-export const TOKEN_FINE_REDEMPTION_VALUE = 0.25; // Each token = $0.25 off fine
+export const TOKEN_FINE_REDEMPTION_VALUE = 0.25; // Each token = ₹0.25 off fine
 
 export function calculateFine(dueDate: string): number {
   const due = new Date(dueDate);
