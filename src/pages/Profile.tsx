@@ -1,16 +1,24 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Coins, Award, BookOpen, Clock, ArrowUpRight, ArrowDownRight,
-  CheckCircle, AlertTriangle, Send
+  CheckCircle, AlertTriangle, Send, LogOut
 } from 'lucide-react';
 import { books, borrowRecords, tokenTransactions, bookRequests, badges, calculateFine } from '@/data/mockData';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { STATUS_COLORS } from '@/lib/colors';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'history' | 'tokens' | 'requests'>('history');
+
+  // Fix #4: Sign-out handler — clears token and redirects to login
+  const handleSignOut = () => {
+    logout();
+    navigate('/login');
+  };
 
   // Fallback to empty array if user or booksBorrowed is missing
   const activeBooksBorrowed = user?.booksBorrowed || [];
@@ -44,12 +52,19 @@ export default function Profile() {
             </h1>
             <p className="text-muted-foreground">{user?.email || ''} · {user?.role || 'user'}</p>
           </div>
-          <div className="text-right">
-            <div className="flex items-center gap-2 text-2xl font-bold text-gold">
-              <Coins className="w-6 h-6" />
-              {user?.tokens || 0}
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-right">
+              <div className="flex items-center gap-2 text-2xl font-bold text-gold">
+                <Coins className="w-6 h-6" />
+                {user?.tokens || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">reward tokens</p>
             </div>
-            <p className="text-xs text-muted-foreground">reward tokens</p>
+            {/* Sign Out — uses btn-danger-outline from design system */}
+            <button onClick={handleSignOut} className="btn-danger-outline">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
           </div>
         </div>
 
@@ -134,11 +149,8 @@ export default function Profile() {
                   {record.fine > 0 && (
                     <p className="text-sm text-destructive font-semibold">₹{record.fine.toFixed(2)} fine</p>
                   )}
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    record.status === 'returned' ? 'bg-success/10 text-success' :
-                    record.status === 'overdue' ? 'bg-destructive/10 text-destructive' :
-                    'bg-accent/10 text-accent'
-                  }`}>
+                  {/* Use STATUS_COLORS token map instead of hardcoded conditionals */}
+                  <span className={STATUS_COLORS[record.status as keyof typeof STATUS_COLORS]?.badge || 'badge-muted'}>
                     {record.status}
                   </span>
                 </div>

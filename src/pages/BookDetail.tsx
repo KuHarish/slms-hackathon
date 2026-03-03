@@ -97,10 +97,13 @@ export default function BookDetail() {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setNotifyMe(true)}
                 disabled={notifyMe}
-                className={`mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+                className={`mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                   notifyMe
+                    // Fix #3: Use text-muted-foreground for proper contrast in both light and dark mode
                     ? 'bg-muted text-muted-foreground cursor-default'
-                    : 'gradient-gold text-primary hover:opacity-90'
+                    // Fix #3: gradient-gold uses hsl(--gold) background; text-primary-foreground is 
+                    // defined as the contrasting foreground for the primary/gold background in both themes
+                    : 'gradient-gold text-primary-foreground hover:opacity-90 active:scale-95'
                 }`}
               >
                 <Bell className="w-4 h-4" />

@@ -19,10 +19,35 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
+
+    // ── Currently borrowed books (ObjectIds of Book documents) ──────────────
     booksBorrowed: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Book'
     }],
+
+    // ── Books the user has fully read/returned ───────────────────────────────
+    booksRead: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Book'
+    }],
+
+    // ── Due / overdue book records ───────────────────────────────────────────
+    dueBooks: [{
+        bookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' },
+        dueDate: { type: Date },
+        isOverdue: { type: Boolean, default: false }
+    }],
+
+    // ── Reading history (lightweight log entries) ────────────────────────────
+    readingHistory: [{
+        bookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' },
+        borrowedAt: { type: Date },
+        returnedAt: { type: Date },
+        status: { type: String, enum: ['active', 'returned', 'overdue'], default: 'active' }
+    }],
+
+    // ── Aggregated counters (kept in sync for fast dashboard reads) ──────────
     totalBorrowedCount: {
         type: Number,
         default: 0
@@ -31,10 +56,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+
+    // ── Reward tokens ────────────────────────────────────────────────────────
     tokens: {
         type: Number,
         default: 0
     },
+
+    // ── Misc user fields ─────────────────────────────────────────────────────
     fineAmount: {
         type: Number,
         default: 0

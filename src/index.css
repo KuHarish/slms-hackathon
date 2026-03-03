@@ -249,4 +249,181 @@
   .animate-fade-slide-in {
     animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
+
+  /* ── Hover lift utility ─────────────────────────────────────────── */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   COMPONENT LAYER — Reusable, theme-aware component classes
+   Usage rule:
+     btn-primary   → CTA / main action buttons
+     btn-secondary → Secondary/alternative actions
+     btn-outline   → Tertiary / ghost outline style
+     btn-danger    → Destructive / delete actions
+     btn-success   → Confirmation / approve actions
+     btn-ghost     → Minimal, no background
+     card          → Standard card/surface container
+     card-muted    → Slightly subdued card
+     badge-*       → Status badges (success/warning/danger/info/accent)
+     form-input    → Text input fields
+   ══════════════════════════════════════════════════════════════════════ */
+@layer components {
+
+  /* ── Button base ──────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           px-4 py-2.5 rounded-xl text-sm font-semibold
+           transition-all duration-200 ease-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+           disabled:pointer-events-none disabled:opacity-50
+           active:scale-[0.97];
+  }
+
+  /* Primary — navy bg in light, gold bg in dark */
+  .btn-primary {
+    @apply btn
+           bg-primary text-primary-foreground
+           hover:opacity-90 hover:-translate-y-0.5 hover:shadow-card;
+  }
+
+  /* Secondary — gold/warm in light, dark navy in dark */
+  .btn-secondary {
+    @apply btn
+           bg-secondary text-secondary-foreground
+           hover:opacity-90 hover:-translate-y-0.5 hover:shadow-card;
+  }
+
+  /* Outline — transparent bg, primary border and text */
+  .btn-outline {
+    @apply btn border border-primary text-primary bg-transparent
+           hover:bg-primary hover:text-primary-foreground
+           hover:-translate-y-0.5;
+  }
+
+  /* Danger — red destructive */
+  .btn-danger {
+    @apply btn
+           bg-destructive text-destructive-foreground
+           hover:opacity-90 hover:-translate-y-0.5;
+  }
+
+  /* Danger outline variant */
+  .btn-danger-outline {
+    @apply btn border border-destructive/40 text-destructive bg-destructive/10
+           hover:bg-destructive/20 hover:-translate-y-0.5;
+  }
+
+  /* Success — green confirm/approve */
+  .btn-success {
+    @apply btn
+           bg-success text-success-foreground
+           hover:opacity-90 hover:-translate-y-0.5;
+  }
+
+  /* Ghost — no background, just text */
+  .btn-ghost {
+    @apply btn text-foreground bg-transparent
+           hover:bg-muted hover:text-foreground;
+  }
+
+  /* Accent / Gold — the gold gradient button used across the app */
+  .btn-accent {
+    @apply btn gradient-gold text-primary-foreground
+           hover:opacity-90 hover:-translate-y-0.5 hover:shadow-glow;
+  }
+
+  /* Icon-only button */
+  .btn-icon {
+    @apply btn p-2 rounded-lg;
+  }
+
+  /* ── Card / Surface ───────────────────────────────────────────────── */
+
+  /* Standard card */
+  .card {
+    @apply bg-card text-card-foreground rounded-2xl border border-border shadow-card;
+  }
+
+  /* Muted / subtle card */
+  .card-muted {
+    @apply bg-muted text-muted-foreground rounded-2xl border border-border;
+  }
+
+  /* Interactive card (hover lift) */
+  .card-interactive {
+    @apply card cursor-pointer
+           transition-all duration-200 ease-out
+           hover:-translate-y-1.5 hover:shadow-elevated;
+  }
+
+  /* Section panel — used for page-level grouping */
+  .panel {
+    @apply bg-card rounded-2xl border border-border p-6 shadow-card;
+  }
+
+  /* ── Status Badges ────────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1
+           px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-success/10 text-success;
+  }
+
+  .badge-danger {
+    @apply badge bg-destructive/10 text-destructive;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning/10 text-warning;
+  }
+
+  .badge-info {
+    @apply badge bg-info/10 text-info;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent/20 text-accent-foreground;
+  }
+
+  .badge-muted {
+    @apply badge bg-muted text-muted-foreground;
+  }
+
+  /* ── Form Input ───────────────────────────────────────────────────── */
+  .form-input {
+    @apply w-full px-4 py-2.5 rounded-xl
+           bg-background border border-input
+           text-foreground placeholder:text-muted-foreground
+           text-sm
+           focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
+           transition-colors duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+
+  /* ── Divider ──────────────────────────────────────────────────────── */
+  .divider {
+    @apply border-t border-border my-4;
+  }
+
+  /* ── Section heading ──────────────────────────────────────────────── */
+  .section-title {
+    @apply font-display text-xl text-foreground;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-muted-foreground mt-0.5;
+  }
 }
