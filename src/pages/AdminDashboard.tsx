@@ -53,10 +53,10 @@ export default function AdminDashboard() {
   const totalAvailable = books.reduce((sum, b) => sum + b.availableCopies, 0);
 
   const stats = [
-    { label: 'Total Users', value: systemUsers.length, icon: Users, color: 'bg-primary/10 text-primary' },
-    { label: 'Total Books', value: totalBooks, sub: `${totalAvailable} available`, icon: BookOpen, color: 'bg-accent/10 text-accent' },
-    { label: 'Active Borrows', value: totalBorrows, sub: `${totalOverdue} overdue`, icon: Shield, color: 'bg-info/10 text-info' },
-    { label: 'System Roles', value: 2, sub: 'admin · user', icon: Settings, color: 'bg-muted text-muted-foreground' },
+    { label: 'Total Users', value: systemUsers.length, icon: Users, gradient: 'from-primary/10 to-primary/5 border-primary/20', iconBg: 'bg-primary/10 text-primary' },
+    { label: 'Total Books', value: totalBooks, sub: `${totalAvailable} copies available`, icon: BookOpen, gradient: 'from-accent/10 to-accent/5 border-accent/20', iconBg: 'bg-accent/20 text-accent-foreground' },
+    { label: 'Active Borrows', value: totalBorrows, sub: `${totalOverdue} overdue`, icon: Shield, gradient: 'from-info/10 to-info/5 border-info/20', iconBg: 'bg-info/10 text-info' },
+    { label: 'System Roles', value: 2, sub: 'admin · user', icon: Settings, gradient: 'from-muted to-muted/50 border-border', iconBg: 'bg-muted text-muted-foreground' },
   ];
 
   const handleStartEdit = (user: User) => {
@@ -88,50 +88,58 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — library summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="bg-card rounded-xl border border-border p-5 shadow-card"
+            transition={{ delay: i * 0.08, duration: 0.35, ease: 'easeOut' }}
+            className={`relative bg-gradient-to-br ${stat.gradient} rounded-2xl border p-5 overflow-hidden`}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}>
+            {/* Decorative background circle */}
+            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-current opacity-[0.04]" />
+            <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center mb-3`}>
               <stat.icon className="w-5 h-5" />
             </div>
             <p className="text-2xl font-bold text-card-foreground">{stat.value}</p>
-            <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-            {stat.sub && <p className="text-xs text-muted-foreground mt-0.5">{stat.sub}</p>}
+            <p className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</p>
+            {stat.sub && (
+              <p className="text-xs text-muted-foreground/70 mt-0.5">{stat.sub}</p>
+            )}
           </motion.div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border gap-1">
         <button
           onClick={() => { setActiveTab('users'); setSearchQuery(''); }}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors relative ${
-            activeTab === 'users' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all duration-200 relative rounded-t-lg ${
+            activeTab === 'users'
+              ? 'text-primary bg-primary/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
           <Users className="w-4 h-4" />
           Users
           {activeTab === 'users' && (
-            <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
           )}
         </button>
         <button
           onClick={() => { setActiveTab('books'); setSearchQuery(''); }}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors relative ${
-            activeTab === 'books' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all duration-200 relative rounded-t-lg ${
+            activeTab === 'books'
+              ? 'text-primary bg-primary/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
           <BookCopy className="w-4 h-4" />
           Books
           {activeTab === 'books' && (
-            <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
           )}
         </button>
       </div>

@@ -21,39 +21,71 @@ export default function BookCard({ book }: { book: Book }) {
   return (
     <Link
       to={`/books/${book.id}`}
-      className="group block bg-card rounded-xl border border-border p-5 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
+      className="group flex flex-col bg-card rounded-2xl border border-border shadow-card overflow-hidden
+                 hover:shadow-elevated hover:-translate-y-1.5 transition-all duration-300"
     >
-      {/* Cover placeholder */}
-      <div className="aspect-[3/4] rounded-lg bg-muted mb-4 flex items-center justify-center overflow-hidden relative">
-        <div className="absolute inset-0 gradient-navy opacity-80" />
-        <BookOpen className="w-12 h-12 text-primary-foreground/40 relative z-10" />
-        <div className="absolute bottom-3 left-3 right-3 z-10">
-          <p className="text-primary-foreground/90 text-xs font-medium truncate">{book.author}</p>
+      {/* Book cover */}
+      <div className="aspect-[3/4] relative overflow-hidden bg-muted flex-shrink-0">
+        {book.coverUrl ? (
+          <img
+            src={book.coverUrl}
+            alt={book.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 gradient-navy" />
+            {/* Decorative lines */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-4 left-4 right-4 h-px bg-white/60" />
+              <div className="absolute top-8 left-4 right-8 h-px bg-white/30" />
+            </div>
+            <BookOpen className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-primary-foreground/25" />
+            {/* Author overlay */}
+            <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-8 bg-gradient-to-t from-black/60 to-transparent">
+              <p className="text-white/90 text-xs font-medium truncate">{book.author}</p>
+            </div>
+          </>
+        )}
+
+        {/* Availability badge */}
+        <div className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
+          available
+            ? 'bg-success/90 text-white'
+            : 'bg-destructive/80 text-white'
+        }`}>
+          {available ? 'Available' : 'Checked Out'}
         </div>
       </div>
 
-      {/* Info */}
-      <h3 className="font-display text-base text-card-foreground group-hover:text-accent transition-colors line-clamp-2 leading-snug mb-2">
-        {book.title}
-      </h3>
+      {/* Info section */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <h3 className="font-display text-[0.93rem] text-card-foreground group-hover:text-accent transition-colors line-clamp-2 leading-snug">
+          {book.title}
+        </h3>
 
-      <p className="text-sm text-muted-foreground mb-3">{book.author}</p>
+        <p className="text-xs text-muted-foreground truncate">{book.author}</p>
 
-      <div className="flex items-center justify-between">
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${categoryColors[book.category] || 'bg-muted text-muted-foreground'}`}>
-          {book.category}
-        </span>
-        <div className="flex items-center gap-1 text-sm">
-          <Star className="w-3.5 h-3.5 text-gold fill-gold" />
-          <span className="text-muted-foreground font-medium">{book.rating}</span>
+        <div className="mt-auto pt-2 flex items-center justify-between">
+          {/* Category pill */}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColors[book.category] || 'bg-muted text-muted-foreground'}`}>
+            {book.category}
+          </span>
+
+          {/* Rating */}
+          <div className="flex items-center gap-1">
+            <Star className="w-3 h-3 text-gold fill-gold" />
+            <span className="text-xs text-muted-foreground font-semibold">{book.rating}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs">
-        <span className={available ? 'text-success font-medium' : 'text-destructive font-medium'}>
-          {available ? `${book.availableCopies} available` : 'Unavailable'}
-        </span>
-        <span className="text-muted-foreground">{book.reviewCount} reviews</span>
+        {/* Copies info */}
+        <div className="text-xs text-muted-foreground pt-1 border-t border-border flex items-center justify-between">
+          <span className={available ? 'text-success font-medium' : 'text-destructive font-medium'}>
+            {available ? `${book.availableCopies} copies left` : 'Unavailable'}
+          </span>
+          <span>{book.reviewCount} reviews</span>
+        </div>
       </div>
     </Link>
   );
