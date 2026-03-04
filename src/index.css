@@ -339,6 +339,12 @@
            hover:opacity-90 hover:-translate-y-0.5 hover:shadow-glow;
   }
 
+  /* Gold — explicit gold gradient button with guaranteed contrast in both modes */
+  .btn-gold {
+    @apply btn gradient-gold text-primary-foreground
+           hover:opacity-90 hover:-translate-y-0.5 hover:shadow-glow;
+  }
+
   /* Icon-only button */
   .btn-icon {
     @apply btn p-2 rounded-lg;

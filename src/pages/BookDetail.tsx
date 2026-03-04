@@ -1,19 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Star, BookOpen, Bell, Clock, Users,
-  MessageSquare, ThumbsUp, Send
+  MessageSquare, ThumbsUp, Send, Loader2
 } from 'lucide-react';
-import { books, reviews as allReviews } from '@/data/mockData';
+import { books } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+
+const API = 'http://localhost:3000';
 
 export default function BookDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
+
+  // Use mockData for book metadata (title, author, copies etc.)
   const book = books.find(b => b.id === id);
-  const bookReviews = allReviews.filter(r => r.bookId === id);
+
   const [notifyMe, setNotifyMe] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+
+  // Fetch live reviews for this book
+  useEffect(() => {
+    if (!id) return;
+    setLoadingReviews(true);
+    fetch(`${API}/api/reviews/book/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        setReviews(Array.isArray(data) ? data : []);
+        setLoadingReviews(false);
+      })
+      .catch(() => setLoadingReviews(false));
+  }, [id]);
 
   if (!book) {
     return (
@@ -25,6 +49,54 @@ export default function BookDetail() {
   }
 
   const available = book.availableCopies > 0;
+
+  const handleSubmitReview = async () => {
+    setSubmitError('');
+    setSubmitSuccess('');
+
+    if (rating === 0) {
+      setSubmitError('Please select a star rating.');
+      return;
+    }
+    if (!reviewText.trim()) {
+      setSubmitError('Please write something in your review.');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSubmitError('You must be logged in to submit a review.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API}/api/reviews/book/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rating, content: reviewText }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(data.message || 'Failed to submit review.');
+      } else {
+        // Prepend the new review optimistically
+        setReviews(prev => [data, ...prev]);
+        setReviewText('');
+        setRating(0);
+        setSubmitSuccess('Review submitted! Thank you.');
+      }
+    } catch {
+      setSubmitError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -61,7 +133,7 @@ export default function BookDetail() {
               ))}
               <span className="ml-2 text-sm font-medium text-foreground">{book.rating}</span>
             </div>
-            <span className="text-sm text-muted-foreground">({book.reviewCount} reviews)</span>
+            <span className="text-sm text-muted-foreground">({reviews.length} reviews)</span>
           </div>
 
           <p className="text-foreground/80 leading-relaxed">{book.description}</p>
@@ -99,10 +171,7 @@ export default function BookDetail() {
                 disabled={notifyMe}
                 className={`mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                   notifyMe
-                    // Fix #3: Use text-muted-foreground for proper contrast in both light and dark mode
                     ? 'bg-muted text-muted-foreground cursor-default'
-                    // Fix #3: gradient-gold uses hsl(--gold) background; text-primary-foreground is 
-                    // defined as the contrasting foreground for the primary/gold background in both themes
                     : 'gradient-gold text-primary-foreground hover:opacity-90 active:scale-95'
                 }`}
               >
@@ -119,12 +188,14 @@ export default function BookDetail() {
       {/* Reviews Section */}
       <section>
         <h2 className="font-display text-2xl text-foreground mb-4 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-accent" /> Reviews & Discussion
+          <MessageSquare className="w-5 h-5 text-accent" /> Reviews &amp; Discussion
         </h2>
 
         {/* Write Review */}
         <div className="bg-card rounded-xl border border-border p-5 shadow-card mb-6">
           <h3 className="font-semibold text-card-foreground mb-3">Write a Review</h3>
+
+          {/* Star picker */}
           <div className="flex gap-1 mb-3">
             {[1, 2, 3, 4, 5].map(s => (
               <button key={s} onClick={() => setRating(s)}>
@@ -132,43 +203,61 @@ export default function BookDetail() {
               </button>
             ))}
           </div>
+
           <textarea
             value={reviewText}
             onChange={e => setReviewText(e.target.value)}
             placeholder="Share your thoughts about this book..."
             className="w-full p-3 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none h-24"
           />
-          <button className="mt-3 px-5 py-2.5 rounded-lg gradient-gold text-primary text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <Send className="w-4 h-4" /> Submit Review
+
+          {/* Validation / success messages */}
+          {submitError && (
+            <p className="text-destructive text-xs mt-1.5">{submitError}</p>
+          )}
+          {submitSuccess && (
+            <p className="text-success text-xs mt-1.5">{submitSuccess}</p>
+          )}
+
+          <button
+            onClick={handleSubmitReview}
+            disabled={submitting}
+            className="btn-gold mt-3 disabled:opacity-60"
+          >
+            {submitting ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+            ) : (
+              <><Send className="w-4 h-4" /> Submit Review</>
+            )}
           </button>
         </div>
 
         {/* Existing Reviews */}
         <div className="space-y-4">
-          {bookReviews.length === 0 ? (
+          {loadingReviews ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+            </div>
+          ) : reviews.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No reviews yet. Be the first!</p>
           ) : (
-            bookReviews.map(review => (
+            reviews.map((review, i) => (
               <motion.div
-                key={review.id}
+                key={review._id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.04 }}
                 className="bg-card rounded-xl border border-border p-5 shadow-card"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-accent-foreground">
-                    {review.userName.split(' ').map(n => n[0]).join('')}
+                    {review.userName?.split(' ').map((n: string) => n[0]).join('') || '?'}
                   </div>
                   <div>
-                    <p className="font-medium text-card-foreground flex items-center gap-2">
-                      {review.userName}
-                      {review.userBadge && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground" title={review.userBadge.name}>
-                          {review.userBadge.icon} {review.userBadge.name}
-                        </span>
-                      )}
+                    <p className="font-medium text-card-foreground">{review.userName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <p className="text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                   </div>
                 </div>
                 <div className="flex gap-0.5 mb-2">
@@ -178,24 +267,10 @@ export default function BookDetail() {
                 </div>
                 <p className="text-foreground/80 text-sm leading-relaxed">{review.content}</p>
                 <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                  <button className="flex items-center gap-1 hover:text-accent transition-colors">
-                    <ThumbsUp className="w-4 h-4" /> {review.likes}
-                  </button>
                   <span className="flex items-center gap-1">
-                    <MessageSquare className="w-4 h-4" /> {review.comments.length}
+                    <ThumbsUp className="w-4 h-4" /> {review.likes}
                   </span>
                 </div>
-
-                {review.comments.length > 0 && (
-                  <div className="mt-4 pl-4 border-l-2 border-border space-y-3">
-                    {review.comments.map(comment => (
-                      <div key={comment.id} className="text-sm">
-                        <p className="font-medium text-card-foreground">{comment.userName}</p>
-                        <p className="text-muted-foreground">{comment.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </motion.div>
             ))
           )}

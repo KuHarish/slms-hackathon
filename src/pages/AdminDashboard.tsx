@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Crown, Users, Shield, BookOpen, Settings, Mail,
-  Search, UserPlus, Trash2, Edit2, Check, X, PlusCircle, BookCopy
+  Search, Trash2, Edit2, Check, X, PlusCircle, BookCopy, Loader2
 } from 'lucide-react';
-import { allUsers, adminUser, allBorrowRecords, books } from '@/data/mockData';
+import { allBorrowRecords, books } from '@/data/mockData';
 import AddBookForm from '@/components/admin/AddBookForm';
 import EditBookModal from '@/components/admin/EditBookModal';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,7 @@ import {
 } from '@/components/ui/table';
 import type { User, UserRole, Book } from '@/types/library';
 
-// Combine all users for the admin panel
-const systemUsers: User[] = [adminUser, ...allUsers];
+// Combine all users for the admin panel — replaced by live API data below
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,23 +22,41 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('user');
   
+  // ── Live user data from MongoDB ────────────────────────────────────────
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setLoadingUsers(true);
+    fetch('http://localhost:3000/api/auth/users', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        setUsers(Array.isArray(data) ? data : []);
+        setLoadingUsers(false);
+      })
+      .catch(() => setLoadingUsers(false));
+  }, []);
+
   // App state & Tabs
   const [activeTab, setActiveTab] = useState<'users' | 'books'>('users');
   const [showAddBook, setShowAddBook] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const filteredUsers = systemUsers.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
   const roleCounts = {
-    all: systemUsers.length,
-    admin: systemUsers.filter(u => u.role === 'admin').length,
-    user: systemUsers.filter(u => u.role === 'user').length,
+    all:   users.length,
+    admin: users.filter(u => u.role === 'admin').length,
+    user:  users.filter(u => u.role === 'user').length,
   };
 
   const filteredBooks = books.filter(b => 
@@ -53,20 +70,36 @@ export default function AdminDashboard() {
   const totalAvailable = books.reduce((sum, b) => sum + b.availableCopies, 0);
 
   const stats = [
-    { label: 'Total Users', value: systemUsers.length, icon: Users, gradient: 'from-primary/10 to-primary/5 border-primary/20', iconBg: 'bg-primary/10 text-primary' },
+    { label: 'Total Users', value: users.length, icon: Users, gradient: 'from-primary/10 to-primary/5 border-primary/20', iconBg: 'bg-primary/10 text-primary' },
     { label: 'Total Books', value: totalBooks, sub: `${totalAvailable} copies available`, icon: BookOpen, gradient: 'from-accent/10 to-accent/5 border-accent/20', iconBg: 'bg-accent/20 text-accent-foreground' },
     { label: 'Active Borrows', value: totalBorrows, sub: `${totalOverdue} overdue`, icon: Shield, gradient: 'from-info/10 to-info/5 border-info/20', iconBg: 'bg-info/10 text-info' },
     { label: 'System Roles', value: 2, sub: 'admin · user', icon: Settings, gradient: 'from-muted to-muted/50 border-border', iconBg: 'bg-muted text-muted-foreground' },
   ];
 
-  const handleStartEdit = (user: User) => {
-    setEditingUser(user.id);
+  const handleStartEdit = (user: any) => {
+    setEditingUser(user._id);
     setEditRole(user.role);
   };
 
-  const handleSaveRole = (userId: string) => {
-    // In a real app this would call an API to update the role in the user_roles table
-    console.log(`[Mock] Would update user ${userId} role to: ${editRole}`);
+  const handleSaveRole = async (userId: string) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:3000/api/auth/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: editRole }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Update local state so the table refreshes instantly
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: data.role } : u));
+      }
+    } catch (err) {
+      console.error('Failed to update role:', err);
+    }
     setEditingUser(null);
   };
 
@@ -80,7 +113,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg gradient-gold flex items-center justify-center">
-          <Crown className="w-5 h-5 text-primary" />
+          <Crown className="w-5 h-5 text-primary-foreground" />
         </div>
         <div>
           <h1 className="font-display text-3xl lg:text-4xl text-foreground">Admin Panel</h1>
@@ -193,22 +226,30 @@ export default function AdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map(u => (
-                <TableRow key={u.id}>
+              {loadingUsers ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+              <>
+              {filteredUsers.map((u: any) => (
+                <TableRow key={u._id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                         u.role === 'admin' ? 'bg-destructive/10 text-destructive' :
                         'bg-primary/10 text-primary'
                       }`}>
-                        {u.name.split(' ').map(n => n[0]).join('')}
+                        {u.name?.split(' ').map((n: string) => n[0]).join('') || '?'}
                       </div>
                       <span className="font-medium text-sm text-card-foreground">{u.name}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
                   <TableCell>
-                    {editingUser === u.id ? (
+                    {editingUser === u._id ? (
                       <select
                         value={editRole}
                         onChange={e => setEditRole(e.target.value as UserRole)}
@@ -218,7 +259,7 @@ export default function AdminDashboard() {
                         <option value="admin">Admin</option>
                       </select>
                     ) : (
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${roleColors[u.role]}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${roleColors[u.role as UserRole]}`}>
                         {u.role}
                       </span>
                     )}
@@ -226,9 +267,9 @@ export default function AdminDashboard() {
                   <TableCell className="text-sm text-card-foreground">{u.tokens}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {u.badges.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
-                      {u.badges.map(b => (
-                        <span key={b.id} title={b.name} className="text-base">{b.icon}</span>
+                      {(!u.badges || u.badges.length === 0) && <span className="text-xs text-muted-foreground">—</span>}
+                      {(u.badges || []).map((b: any, i: number) => (
+                        <span key={b.id || i} title={b.name} className="text-base">{b.icon}</span>
                       ))}
                     </div>
                   </TableCell>
@@ -237,9 +278,9 @@ export default function AdminDashboard() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-end">
-                      {editingUser === u.id ? (
+                      {editingUser === u._id ? (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => handleSaveRole(u.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleSaveRole(u._id)}>
                             <Check className="w-4 h-4 text-success" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setEditingUser(null)}>
@@ -262,12 +303,14 @@ export default function AdminDashboard() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredUsers.length === 0 && (
+              {!loadingUsers && filteredUsers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No users found matching your filters.
                   </TableCell>
                 </TableRow>
+              )}
+              </>
               )}
             </TableBody>
           </Table>

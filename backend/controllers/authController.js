@@ -110,4 +110,55 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getMe };
+// ── Admin: Get all users ─────────────────────────────────────────────────────
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select("-password -resetPasswordToken -resetPasswordExpires")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Shape to match what the frontend table expects
+    const shaped = users.map(u => ({
+      _id:       u._id,
+      name:      u.fullName,
+      email:     u.email,
+      role:      u.role,
+      tokens:    u.tokens    || 0,
+      badges:    u.badges    || [],
+      joinedAt:  u.createdAt,
+      lastLogin: u.lastLogin || null,
+      totalBorrowedCount: u.totalBorrowedCount || 0,
+    }));
+
+    res.json(shaped);
+  } catch (error) {
+    console.error("getAllUsers error:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
+
+// ── Admin: Update a user's role ───────────────────────────────────────────────
+const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ message: "Invalid role. Must be 'user' or 'admin'." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: { role } },
+      { new: true, select: "-password" }
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Role updated", role: user.role });
+  } catch (error) {
+    console.error("updateUserRole error:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
+
+module.exports = { registerUser, loginUser, getMe, getAllUsers, updateUserRole };

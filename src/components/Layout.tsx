@@ -106,7 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="p-5 pb-4">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center shadow-glow flex-shrink-0">
-              <BookMarked className="w-5 h-5 text-primary" />
+              <BookMarked className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-display text-lg text-sidebar-foreground leading-tight tracking-tight">Book Hive</h1>
@@ -129,7 +129,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="p-3 border-t border-sidebar-border space-y-2">
           {user && (
             <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/30">
-              <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+              <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-xs font-bold text-primary-foreground flex-shrink-0">
                 {user.name.split(' ').map(n => n[0]).join('')}
               </div>
               <div className="flex-1 min-w-0">
@@ -169,7 +169,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center">
-                    <BookMarked className="w-4 h-4 text-primary" />
+                    <BookMarked className="w-4 h-4 text-primary-foreground" />
                   </div>
                   <span className="font-display text-sidebar-foreground">Book Hive</span>
                 </div>
@@ -189,7 +189,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {user && (
                 <div className="p-3 border-t border-sidebar-border">
                   <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/30 mb-2">
-                    <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-xs font-bold text-primary">
+                    <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-xs font-bold text-primary-foreground">
                       {user.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -311,7 +311,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* User avatar */}
           <Link
             to="/profile"
-            className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-[11px] font-bold text-primary hover:shadow-glow transition-all duration-200"
+            className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-[11px] font-bold text-primary-foreground hover:shadow-glow transition-all duration-200"
           >
             {user.name.split(' ').map(n => n[0]).join('')}
           </Link>

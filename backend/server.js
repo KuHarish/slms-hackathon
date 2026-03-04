@@ -17,10 +17,13 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log(err));
 
 const notificationRoutes = require("./routes/notificationRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 app.use("/api/books", bookRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.use("/api/auth", authRoutes);
+
 
 app.get("/", (req, res) => {
   res.send("API Working");

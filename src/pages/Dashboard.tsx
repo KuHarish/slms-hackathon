@@ -99,34 +99,36 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* ── Library Overview (global stats) ──────────────────── */}
-      <section>
-        <h2 className="font-display text-lg text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-accent" />
-          Library Overview
-        </h2>
-        <motion.div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          {libraryStatCards.map(stat => (
-            <motion.div
-              key={stat.label}
-              variants={cardVariants}
-              className={`relative bg-gradient-to-br ${stat.gradient} rounded-2xl border p-5 overflow-hidden`}
-            >
-              <div className="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-current opacity-5" />
-              <div className={`w-9 h-9 rounded-xl ${stat.iconBg} flex items-center justify-center mb-3`}>
-                <stat.icon className="w-4 h-4" />
-              </div>
-              <p className="text-2xl font-bold text-card-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
+      {/* ── Library Overview (global stats) — admin only ──────── */}
+      {user?.role === 'admin' && (
+        <section>
+          <h2 className="font-display text-lg text-foreground mb-3 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-accent" />
+            Library Overview
+          </h2>
+          <motion.div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+          >
+            {libraryStatCards.map(stat => (
+              <motion.div
+                key={stat.label}
+                variants={cardVariants}
+                className={`relative bg-gradient-to-br ${stat.gradient} rounded-2xl border p-5 overflow-hidden`}
+              >
+                <div className="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-current opacity-5" />
+                <div className={`w-9 h-9 rounded-xl ${stat.iconBg} flex items-center justify-center mb-3`}>
+                  <stat.icon className="w-4 h-4" />
+                </div>
+                <p className="text-2xl font-bold text-card-foreground">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-1 font-medium">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+      )}
 
       {/* ── My Activity (user-specific stats) ────────────────── */}
       <section>

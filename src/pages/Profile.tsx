@@ -38,7 +38,7 @@ export default function Profile() {
         className="bg-card rounded-xl border border-border p-6 shadow-card"
       >
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full gradient-gold flex items-center justify-center text-xl font-bold text-primary">
+          <div className="w-16 h-16 rounded-full gradient-gold flex items-center justify-center text-xl font-bold text-primary-foreground">
             {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
           </div>
           <div className="flex-1">
