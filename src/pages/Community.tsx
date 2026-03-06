@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Star, MessageSquare, ThumbsUp, BookOpen, Loader2, Filter } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+const API = 'https://bookhive-95y5.onrender.com';
 
 export default function Community() {
   const [reviews, setReviews] = useState<any[]>([]);

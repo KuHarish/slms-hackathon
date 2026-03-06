@@ -62,7 +62,7 @@ export default function EditBookModal({ book, onSuccess, onCancel, token }: Edit
 
     try {
       // In a completely integrated system, this uses the real backend
-      const res = await fetch(`http://localhost:3000/api/books/${book.id}`, {
+      const res = await fetch(`https://bookhive-95y5.onrender.com/api/books/${book.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

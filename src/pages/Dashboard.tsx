@@ -27,7 +27,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem('token');
-      fetch('http://localhost:3000/api/notifications', {
+      fetch('https://bookhive-95y5.onrender.com/api/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())

@@ -28,7 +28,7 @@ export default function SignupUser() {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/register', {
+      const res = await fetch('https://bookhive-95y5.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmedName, email, password, role: 'user' })

@@ -8,7 +8,7 @@ import {
 import { books } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 
-const API = 'http://localhost:3000';
+const API = 'https://bookhive-95y5.onrender.com';
 
 export default function BookDetail() {
   const { id } = useParams();

@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     setLoadingUsers(true);
-    fetch('http://localhost:3000/api/auth/users', {
+    fetch('https://bookhive-95y5.onrender.com/api/auth/users', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   const handleSaveRole = async (userId: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3000/api/auth/users/${userId}/role`, {
+      const res = await fetch(`https://bookhive-95y5.onrender.com/api/auth/users/${userId}/role`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
