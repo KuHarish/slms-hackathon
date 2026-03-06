@@ -63,12 +63,13 @@ export interface BorrowRecord {
 }
 
 export interface Notification {
-  id: string;
+  id?: string;
+  _id?: string;
   userId: string;
-  type: 'due_soon' | 'overdue' | 'available' | 'badge_earned' | 'request_approved';
+  type: 'due_soon' | 'overdue' | 'available' | 'badge_earned' | 'request_approved' | 'info' | 'warning' | 'success' | 'error';
   title: string;
   message: string;
-  read: boolean;
+  isRead: boolean;
   createdAt: string;
   bookId?: string;
 }

@@ -99,7 +99,7 @@ export const NotificationService = {
   },
 
   async getUnreadCount(userId: string): Promise<number> {
-    return notifications.filter(n => n.userId === userId && !n.read).length;
+    return notifications.filter(n => n.userId === userId && !n.isRead).length;
   },
 };
 

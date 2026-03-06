@@ -109,10 +109,10 @@ export const borrowRecords: BorrowRecord[] = [
 // Notifications
 // ============================================
 export const notifications: Notification[] = [
-  { id: 'n1', userId: 'u1', type: 'overdue', title: 'Book Overdue!', message: '"Thinking, Fast and Slow" is 3 days overdue. Return it to avoid additional fines.', read: false, createdAt: '2026-02-21', bookId: 'bk4' },
-  { id: 'n2', userId: 'u1', type: 'due_soon', title: 'Due Date Approaching', message: '"Clean Code" is due in 6 days. Return by March 1st.', read: false, createdAt: '2026-02-22', bookId: 'bk3' },
-  { id: 'n3', userId: 'u1', type: 'badge_earned', title: 'New Badge! 🎉', message: 'You earned the "Speed Reader" badge for returning 5 books early!', read: true, createdAt: '2026-02-05' },
-  { id: 'n4', userId: 'u1', type: 'available', title: 'Book Available!', message: '"Sapiens" is now available. Hurry before it\'s gone!', read: true, createdAt: '2026-01-28', bookId: 'bk2' },
+  { id: 'n1', userId: 'u1', type: 'overdue', title: 'Book Overdue!', message: '"Thinking, Fast and Slow" is 3 days overdue. Return it to avoid additional fines.', isRead: false, createdAt: '2026-02-21', bookId: 'bk4' },
+  { id: 'n2', userId: 'u1', type: 'due_soon', title: 'Due Date Approaching', message: '"Clean Code" is due in 6 days. Return by March 1st.', isRead: false, createdAt: '2026-02-22', bookId: 'bk3' },
+  { id: 'n3', userId: 'u1', type: 'badge_earned', title: 'New Badge! 🎉', message: 'You earned the "Speed Reader" badge for returning 5 books early!', isRead: true, createdAt: '2026-02-05' },
+  { id: 'n4', userId: 'u1', type: 'available', title: 'Book Available!', message: '"Sapiens" is now available. Hurry before it\'s gone!', isRead: true, createdAt: '2026-01-28', bookId: 'bk2' },
 ];
 
 // ============================================

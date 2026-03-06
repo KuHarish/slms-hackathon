@@ -279,9 +279,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         No notifications yet.
                       </div>
                     ) : (
-                      notifications.map(notif => (
+                      notifications.map((notif, i) => (
                         <div
-                          key={notif._id || notif.id}
+                          key={notif._id || notif.id || i}
                           className={`p-3 rounded-xl mb-1 flex items-start gap-3 transition-colors cursor-pointer ${
                             !notif.isRead ? 'bg-accent/5 hover:bg-accent/10' : 'hover:bg-muted/50'
                           }`}

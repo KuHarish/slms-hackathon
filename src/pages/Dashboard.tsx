@@ -248,7 +248,7 @@ export default function Dashboard() {
           ) : (
             notifications.slice(0, 3).map((notif, i) => (
               <motion.div
-                key={notif._id || notif.id}
+                key={notif._id || notif.id || i}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
