@@ -1,5 +1,17 @@
 const Book = require("../models/Book");
 
+// -------------------------------------------------------------------
+// Helper: "Clean Code" → "clean-code"
+// -------------------------------------------------------------------
+function titleToSlug(title) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 // @desc    Get all books
 // @route   GET /api/books
 // @access  Public (or Protected depending on setup)
@@ -26,6 +38,7 @@ const createBook = async (req, res) => {
       totalCopies,
       publishedYear,
       coverImage,
+      slug: customSlug,
     } = req.body;
 
     // Validate required fields
@@ -49,15 +62,32 @@ const createBook = async (req, res) => {
       category,
       description,
       totalCopies,
-      availableCopies: totalCopies, // newly added books have all copies available
+      availableCopies: totalCopies,
       publishedYear,
       coverImage,
+      slug: customSlug || titleToSlug(title),
     });
 
     res.status(201).json(book);
   } catch (error) {
     console.error("Error creating book:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Get a single book by its slug (e.g. "bk4" or "clean-code")
+// @route   GET /api/books/slug/:slug
+// @access  Public
+const getBookBySlug = async (req, res) => {
+  try {
+    const book = await Book.findOne({ slug: req.params.slug.toLowerCase() });
+    if (!book) {
+      return res.status(404).json({ message: `No book found with slug "${req.params.slug}"` });
+    }
+    res.json(book);
+  } catch (error) {
+    console.error("getBookBySlug error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -95,5 +125,6 @@ const updateBook = async (req, res) => {
 module.exports = {
   getAllBooks,
   createBook,
+  getBookBySlug,
   updateBook,
 };

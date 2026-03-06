@@ -1,5 +1,29 @@
 const Review = require("../models/Review");
 const Book = require("../models/Book");
+const mongoose = require("mongoose");
+
+// Helper: check if a string is a valid MongoDB ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+// -------------------------------------------------------------------
+// Resolves a bookId param that may be either a MongoDB ObjectId string
+// OR a slug like "bk4" / "clean-code".
+// Returns the resolved ObjectId string, or throws a structured error.
+// -------------------------------------------------------------------
+async function resolveBookId(param) {
+  if (isValidObjectId(param)) {
+    // Looks like an ObjectId — use as-is (still 404s cleanly if not found)
+    return param;
+  }
+  // Not an ObjectId → treat as slug
+  const book = await Book.findOne({ slug: param.toLowerCase() }).select("_id").lean();
+  if (!book) {
+    const err = new Error(`No book found with slug "${param}"`);
+    err.statusCode = 404;
+    throw err;
+  }
+  return book._id;
+}
 
 // @desc  Get all reviews for the Community feed (with optional ?category= filter)
 // @route GET /api/reviews
@@ -49,12 +73,16 @@ const getAllReviews = async (req, res) => {
 // @access Public
 const getReviewsByBook = async (req, res) => {
   try {
-    const reviews = await Review.find({ bookId: req.params.bookId })
+    const resolvedBookId = await resolveBookId(req.params.bookId);
+
+    const reviews = await Review.find({ bookId: resolvedBookId })
       .sort({ createdAt: -1 })
       .lean();
+
     res.json(reviews);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("getReviewsByBook error:", error);
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -64,26 +92,33 @@ const getReviewsByBook = async (req, res) => {
 const addReview = async (req, res) => {
   try {
     const { rating, content } = req.body;
-    const bookId = req.params.bookId;
 
     if (!rating || !content) {
       return res.status(400).json({ message: "Rating and content are required." });
     }
 
-    // Check book exists
-    const book = await Book.findById(bookId);
+    // Resolve slug or ObjectId → actual book _id
+    let resolvedBookId;
+    try {
+      resolvedBookId = await resolveBookId(req.params.bookId);
+    } catch (err) {
+      return res.status(err.statusCode || 400).json({ message: err.message });
+    }
+
+    // Verify book exists (also catches the case where ObjectId is valid but no doc)
+    const book = await Book.findById(resolvedBookId);
     if (!book) {
       return res.status(404).json({ message: "Book not found." });
     }
 
     // One review per user per book (unique index will also catch this)
-    const existing = await Review.findOne({ bookId, userId: req.user._id });
+    const existing = await Review.findOne({ bookId: resolvedBookId, userId: req.user._id });
     if (existing) {
       return res.status(400).json({ message: "You have already reviewed this book." });
     }
 
     const review = await Review.create({
-      bookId,
+      bookId: resolvedBookId,
       userId: req.user._id,
       userName: req.user.fullName,
       rating,
@@ -92,7 +127,6 @@ const addReview = async (req, res) => {
 
     res.status(201).json(review);
   } catch (error) {
-    // Duplicate key from the unique compound index
     if (error.code === 11000) {
       return res.status(400).json({ message: "You have already reviewed this book." });
     }

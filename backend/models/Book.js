@@ -37,6 +37,13 @@ const bookSchema = new mongoose.Schema(
     coverImage: {
       type: String,
     },
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,   // allows multiple docs with no slug during migration
+      trim: true,
+      lowercase: true,
+    },
   },
   { timestamps: true }
 );
