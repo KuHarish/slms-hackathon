@@ -2,12 +2,19 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Coins, Award, BookOpen, Clock, ArrowUpRight, ArrowDownRight,
-  CheckCircle, AlertTriangle, Send, LogOut
+  CheckCircle, AlertTriangle, Send, LogOut, Loader2
 } from 'lucide-react';
-import { books, borrowRecords, tokenTransactions, bookRequests, badges, calculateFine } from '@/data/mockData';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { STATUS_COLORS } from '@/lib/colors';
+
+const API = "http://localhost:3000/api";
+
+const badges = [
+  { id: 'b1', name: 'Bookworm', description: 'Read 10 books', icon: '🐛', requiredTokens: 100 },
+  { id: 'b2', name: 'Scholar', description: 'Read 50 books', icon: '🎓', requiredTokens: 500 },
+  { id: 'b3', name: 'Library Legend', description: 'Read 100 books', icon: '👑', requiredTokens: 1000 },
+];
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -20,14 +27,32 @@ export default function Profile() {
     navigate('/login');
   };
 
-  // Fallback to empty array if user or booksBorrowed is missing
-  const activeBooksBorrowed = user?.booksBorrowed || [];
+  const [history, setHistory] = useState<any[]>([]);
+  const [tokenTransactions] = useState<any[]>([]);
+  const [bookRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const history = borrowRecords.map(r => ({
-    ...r,
-    book: books.find(b => b.id === r.bookId),
-    fine: r.status === 'overdue' ? calculateFine(r.dueDate) : r.fine,
-  }));
+  useEffect(() => {
+    if (user) {
+      const token = localStorage.getItem('token');
+      fetch(`${API}/transactions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          // Filter transactions for current user id
+          const myId = user._id || user.id;
+          const myTx = data.filter(t => (t.user_id?._id || t.user_id) === myId || (t.user?._id || t.user) === myId);
+          setHistory(myTx);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -127,35 +152,48 @@ export default function Profile() {
       {tab === 'history' && (
         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-card">
           <div className="divide-y divide-border">
-            {history.map(record => (
-              <div key={record.id} className="p-4 lg:px-6 flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  record.status === 'returned' ? 'bg-success/10' : record.status === 'overdue' ? 'bg-destructive/10' : 'bg-accent/10'
-                }`}>
-                  {record.status === 'returned' ? <CheckCircle className="w-5 h-5 text-success" /> :
-                   record.status === 'overdue' ? <AlertTriangle className="w-5 h-5 text-destructive" /> :
-                   <Clock className="w-5 h-5 text-accent" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Link to={`/books/${record.bookId}`} className="font-medium text-card-foreground hover:text-accent transition-colors">
-                    {record.book?.title}
-                  </Link>
-                  <p className="text-sm text-muted-foreground">
-                    Borrowed {new Date(record.borrowedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {record.returnedAt && ` · Returned ${new Date(record.returnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {record.fine > 0 && (
-                    <p className="text-sm text-destructive font-semibold">₹{record.fine.toFixed(2)} fine</p>
-                  )}
-                  {/* Use STATUS_COLORS token map instead of hardcoded conditionals */}
-                  <span className={STATUS_COLORS[record.status as keyof typeof STATUS_COLORS]?.badge || 'badge-muted'}>
-                    {record.status}
-                  </span>
-                </div>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
               </div>
-            ))}
+            ) : history.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No history found.</p>
+            ) : (
+              history.map(record => {
+                const title = record.book_id?.title || record.book?.title || 'Unknown Book';
+                const status = record.status || 'active';
+                const fine = record.fine || 0;
+                
+                return (
+                  <div key={record._id || record.id} className="p-4 lg:px-6 flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      status === 'returned' ? 'bg-success/10' : status === 'overdue' ? 'bg-destructive/10' : 'bg-accent/10'
+                    }`}>
+                      {status === 'returned' ? <CheckCircle className="w-5 h-5 text-success" /> :
+                      status === 'overdue' ? <AlertTriangle className="w-5 h-5 text-destructive" /> :
+                      <Clock className="w-5 h-5 text-accent" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/books/${record.book_id?._id || record.book?._id || record.book_id || record.book}`} className="font-medium text-card-foreground hover:text-accent transition-colors">
+                        {title}
+                      </Link>
+                      <p className="text-sm text-muted-foreground">
+                        Borrowed {new Date(record.checkout_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {record.return_date && ` · Returned ${new Date(record.return_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {fine > 0 && (
+                        <p className="text-sm text-destructive font-semibold">₹{fine.toFixed(2)} fine</p>
+                      )}
+                      <span className={STATUS_COLORS[status as keyof typeof STATUS_COLORS]?.badge || 'badge-muted'}>
+                        {status}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

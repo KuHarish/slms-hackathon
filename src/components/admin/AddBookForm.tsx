@@ -47,13 +47,12 @@ export default function AddBookForm({ onSuccess, onCancel, token }: AddBookFormP
     setError('');
 
     try {
-      // In a completely integrated system, this uses the real backend
-      // Fallback logic exists here for mock-data continuity if backend isn't ready
+      const authToken = token || localStorage.getItem('token');
       const res = await fetch('http://localhost:3000/api/books', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         },
         body: JSON.stringify(formData)
       });

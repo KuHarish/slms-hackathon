@@ -49,6 +49,10 @@ const getAllReviews = async (req, res) => {
 // @access Public
 const getReviewsByBook = async (req, res) => {
   try {
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(req.params.bookId)) {
+      return res.json([]);
+    }
     const reviews = await Review.find({ bookId: req.params.bookId })
       .sort({ createdAt: -1 })
       .lean();
@@ -71,6 +75,11 @@ const addReview = async (req, res) => {
     }
 
     // Check book exists
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(404).json({ message: "Book not found (invalid ID)" });
+    }
+
     const book = await Book.findById(bookId);
     if (!book) {
       return res.status(404).json({ message: "Book not found." });

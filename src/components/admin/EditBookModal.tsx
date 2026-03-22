@@ -61,21 +61,19 @@ export default function EditBookModal({ book, onSuccess, onCancel, token }: Edit
     setError('');
 
     try {
-      // In a completely integrated system, this uses the real backend
+      const authToken = token || localStorage.getItem('token');
       const res = await fetch(`http://localhost:3000/api/books/${book.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         },
         body: JSON.stringify(formData)
       });
 
       if (!res.ok) {
-        // Since we may be testing against MockData that doesn't actually exist in the DB,
-        // we'll simulate success if DB fails but allow errors to propagate if they are real.
         const errorData = await res.json().catch(() => ({}));
-        console.warn('Backend edit failed (likely mock data lack of DB sync), proceeding optimization', errorData);
+        throw new Error(errorData.message || 'Failed to edit book');
       }
 
       onSuccess();

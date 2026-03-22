@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   BookOpen, Clock, AlertTriangle, TrendingUp,
-  Star, ArrowRight, Coins, Bell, Library, BookCheck, BookX
+  Star, ArrowRight, Coins, Bell, Library, BookCheck, BookX, Loader2
 } from 'lucide-react';
-// Global library catalog — used only for library-wide Overview stats
-import { books, borrowRecords, calculateFine } from '@/data/mockData';
 import BookCard from '@/components/BookCard';
+
+const API = "http://localhost:3000/api";
 
 // Framer Motion stagger variants
 const containerVariants = {
@@ -23,18 +23,67 @@ const cardVariants = {
 export default function Dashboard() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>([]);
+  const [activeBorrows, setActiveBorrows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [returnLoading, setReturnLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem('token');
-      fetch('http://localhost:3000/api/notifications', {
+      // Fetch Notifications
+      fetch(`${API}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())
-      .then(data => setNotifications(data))
+      .then(data => setNotifications(Array.isArray(data) ? data : []))
+      .catch(console.error);
+
+      // Fetch Active Borrows
+      fetch(`${API}/users/${user._id || user.id}/active-books`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setActiveBorrows(Array.isArray(data) ? data : []))
       .catch(console.error);
     }
+    
+    // Fetch all books for stats & trending
+    fetch(`${API}/books`)
+      .then(res => res.json())
+      .then(data => {
+        const formatted = Array.isArray(data) ? data.map((b: any) => ({
+          ...b,
+          id: b._id,
+          availableCopies: b.availableCopies !== undefined ? b.availableCopies : b.available_copies,
+          totalCopies: b.totalCopies !== undefined ? b.totalCopies : b.total_copies,
+          rating: b.rating || 4.0,
+          tags: b.tags || []
+        })) : [];
+        setBooks(formatted);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [user]);
+
+  const handleReturn = async (transactionId: string) => {
+    setReturnLoading(transactionId);
+    try {
+      const res = await fetch(`${API}/return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: transactionId })
+      });
+      if (res.ok) {
+        setActiveBorrows(prev => prev.filter(t => t._id !== transactionId));
+        // Update user context / refresh global stats as needed
+      }
+    } catch (err) {
+      console.error('Error returning book', err);
+    } finally {
+      setReturnLoading(null);
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -48,19 +97,7 @@ export default function Dashboard() {
   const myOverdueCount = (user as any)?.overdueBooksCount ?? 0;
   const myTokens       = user?.tokens ?? 0;
 
-  // Active Borrows list — prefer real DB data (booksBorrowed populated from MongoDB);
-  // fall back to mockData borrowRecords while a borrow-recording API doesn't exist yet.
-  const dbBorrows: any[] = (user as any)?.booksBorrowed ?? [];
-  const mockActiveBorrows = borrowRecords
-    .filter(r => r.status !== 'returned')
-    .map(r => ({
-      ...r,
-      book: books.find(b => b.id === r.bookId),
-      fine: r.status === 'overdue' ? calculateFine(r.dueDate) : 0,
-    }));
-  const activeBorrows = dbBorrows.length > 0 ? dbBorrows : mockActiveBorrows;
-
-  // ── Library-wide Overview stats (same for all users — shows library health) ──
+  // ── Library-wide Overview stats ──
   const totalBooks      = books.length;
   const totalAvailable  = books.reduce((sum, b) => sum + b.availableCopies, 0);
   const totalIssued     = books.reduce((sum, b) => sum + (b.totalCopies - b.availableCopies), 0);
@@ -158,8 +195,6 @@ export default function Dashboard() {
       </section>
 
       {/* ── Active Borrows ────────────────────────────────────── */}
-      {/* Fix #1: Renders books from the user's booksBorrowed array (from MongoDB) */}
-      {/* A new user with no books will see the empty state — Fix #2 */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-xl text-foreground">Active Borrows</h2>
@@ -180,8 +215,8 @@ export default function Dashboard() {
                 const title    = borrow.title    || borrow.book?.title    || 'Unknown Book';
                 const author   = borrow.author   || borrow.book?.author   || '';
                 const coverUrl = borrow.coverUrl || borrow.book?.coverUrl || '';
-                const bookId   = borrow._id      || borrow.bookId         || borrow.id;
-                const dueDate  = borrow.dueDate;
+                const bookId   = borrow.book_id?._id || borrow.book?._id || borrow.bookId || borrow._id;
+                const dueDate  = borrow.dueDate || borrow.due_date;
                 const status   = borrow.status   || 'active';
                 const fine     = borrow.fine      || 0;
                 return (
@@ -190,44 +225,63 @@ export default function Dashboard() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="p-4 lg:px-6 flex items-center gap-4 hover:bg-muted/30 transition-colors"
+                    className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:bg-muted/30 transition-colors"
                   >
-                    <div className="w-10 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {coverUrl ? (
-                        <img src={coverUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <BookOpen className="w-5 h-5 text-muted-foreground" />
-                      )}
+                    <div className="flex items-center gap-4 flex-1 w-full">
+                      <div className="w-10 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {coverUrl ? (
+                          <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <BookOpen className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          to={`/books/${bookId}`}
+                          className="font-medium text-sm text-card-foreground hover:text-accent transition-colors line-clamp-1"
+                        >
+                          {title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-0.5">{author}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        to={`/books/${bookId}`}
-                        className="font-medium text-sm text-card-foreground hover:text-accent transition-colors line-clamp-1"
-                      >
-                        {title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground mt-0.5">{author}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0 space-y-1">
-                      {dueDate && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Due {new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                        </div>
-                      )}
-                      {fine > 0 && (
-                        <span className="text-destructive text-xs font-medium flex items-center gap-1 justify-end">
-                          <AlertTriangle className="w-3 h-3" />₹{fine.toFixed(2)} fine
+                    
+                    <div className="flex items-center gap-4 justify-between w-full sm:w-auto mt-2 sm:mt-0">
+                      <div className="text-left sm:text-right flex-shrink-0 space-y-1">
+                        {dueDate && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Due {new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                          </div>
+                        )}
+                        {fine > 0 && (
+                          <span className="text-destructive text-xs font-medium flex items-center gap-1 justify-end">
+                            <AlertTriangle className="w-3 h-3" />₹{fine.toFixed(2)} fine
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0 ${
+                          status === 'overdue'
+                            ? 'bg-destructive/10 text-destructive'
+                            : 'bg-success/10 text-success'
+                        }`}>
+                          {status}
                         </span>
-                      )}
+                        
+                        {(status === 'issued' || status === 'overdue' || status === 'active') && (
+                          <button
+                            onClick={() => handleReturn(borrow._id)}
+                            disabled={returnLoading === borrow._id}
+                            className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 rounded-md hover:bg-primary/90 transition disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {returnLoading === borrow._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Return
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0 ${
-                      status === 'overdue'
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-success/10 text-success'
-                    }`}>
-                      {status}
-                    </span>
                   </motion.div>
                 );
               })}

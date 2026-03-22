@@ -4,7 +4,6 @@ import {
   Crown, Users, Shield, BookOpen, Settings, Mail,
   Search, Trash2, Edit2, Check, X, PlusCircle, BookCopy, Loader2
 } from 'lucide-react';
-import { allBorrowRecords, books } from '@/data/mockData';
 import AddBookForm from '@/components/admin/AddBookForm';
 import EditBookModal from '@/components/admin/EditBookModal';
 import { Button } from '@/components/ui/button';
@@ -22,9 +21,18 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('user');
   
-  // ── Live user data from MongoDB ────────────────────────────────────────
+  // ── Live data from MongoDB ────────────────────────────────────────
   const [users, setUsers] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // App state & Tabs
+  const [activeTab, setActiveTab] = useState<'users' | 'books'>('users');
+  const [showAddBook, setShowAddBook] = useState(false);
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -38,13 +46,33 @@ export default function AdminDashboard() {
         setLoadingUsers(false);
       })
       .catch(() => setLoadingUsers(false));
-  }, []);
 
-  // App state & Tabs
-  const [activeTab, setActiveTab] = useState<'users' | 'books'>('users');
-  const [showAddBook, setShowAddBook] = useState(false);
-  const [editingBookId, setEditingBookId] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+    // Fetch books
+    fetch('http://localhost:3000/api/books')
+      .then(res => res.json())
+      .then(data => {
+        const mapped = Array.isArray(data) ? data.map((b: any) => ({
+          ...b,
+          id: b._id,
+          availableCopies: b.availableCopies !== undefined ? b.availableCopies : b.available_copies,
+          totalCopies: b.totalCopies !== undefined ? b.totalCopies : b.total_copies
+        })) : [];
+        setBooks(mapped);
+      })
+      .catch(console.error);
+
+    // Fetch transactions
+    fetch('http://localhost:3000/api/transactions', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setTransactions(Array.isArray(data) ? data : []);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingData(false));
+
+  }, [refreshTrigger]);
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -60,14 +88,14 @@ export default function AdminDashboard() {
   };
 
   const filteredBooks = books.filter(b => 
-    b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    b.author.toLowerCase().includes(searchQuery.toLowerCase())
+    b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    b.author?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalBorrows = allBorrowRecords.length;
-  const totalOverdue = allBorrowRecords.filter(r => r.status === 'overdue').length;
+  const totalBorrows = transactions.filter(t => t.status === 'issued').length;
+  const totalOverdue = transactions.filter(t => t.status === 'overdue').length;
   const totalBooks = books.length;
-  const totalAvailable = books.reduce((sum, b) => sum + b.availableCopies, 0);
+  const totalAvailable = books.reduce((sum, b) => sum + (b.availableCopies || 0), 0);
 
   const stats = [
     { label: 'Total Users', value: users.length, icon: Users, gradient: 'from-primary/10 to-primary/5 border-primary/20', iconBg: 'bg-primary/10 text-primary' },

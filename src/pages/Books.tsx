@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, BookOpen } from 'lucide-react';
-import { books } from '@/data/mockData';
+import { Search, SlidersHorizontal, BookOpen, Loader2 } from 'lucide-react';
+const API = "http://localhost:3000/api";
 import BookCard from '@/components/BookCard';
 import type { BookCategory } from '@/types/library';
 
@@ -40,6 +40,27 @@ export default function Books() {
   const [category, setCategory] = useState<BookCategory | ''>('');
   const [sort, setSort] = useState('rating');
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [books, setBooks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/books`)
+      .then(res => res.json())
+      .then(data => {
+        // Map backend properties to frontend interface
+        const formatted = data.map((b: any) => ({
+          ...b,
+          id: b._id,
+          availableCopies: b.availableCopies !== undefined ? b.availableCopies : b.available_copies,
+          totalCopies: b.totalCopies !== undefined ? b.totalCopies : b.total_copies,
+          rating: b.rating || 4.0, // default if missing
+          tags: b.tags || []
+        }));
+        setBooks(formatted);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   let filtered = [...books];
   if (query) {
@@ -144,7 +165,11 @@ export default function Books() {
       ) : null}
 
       {/* Book grid with stagger animation */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-10 h-10 text-muted-foreground animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
