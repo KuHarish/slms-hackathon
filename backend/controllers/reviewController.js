@@ -73,9 +73,17 @@ const getAllReviews = async (req, res) => {
 // @access Public
 const getReviewsByBook = async (req, res) => {
   try {
+<<<<<<< HEAD
     const resolvedBookId = await resolveBookId(req.params.bookId);
 
     const reviews = await Review.find({ bookId: resolvedBookId })
+=======
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(req.params.bookId)) {
+      return res.json([]);
+    }
+    const reviews = await Review.find({ bookId: req.params.bookId })
+>>>>>>> 42e207806973fdbc61b051bfc1f59e497d2b4c40
       .sort({ createdAt: -1 })
       .lean();
 
@@ -97,6 +105,7 @@ const addReview = async (req, res) => {
       return res.status(400).json({ message: "Rating and content are required." });
     }
 
+<<<<<<< HEAD
     // Resolve slug or ObjectId → actual book _id
     let resolvedBookId;
     try {
@@ -107,6 +116,15 @@ const addReview = async (req, res) => {
 
     // Verify book exists (also catches the case where ObjectId is valid but no doc)
     const book = await Book.findById(resolvedBookId);
+=======
+    // Check book exists
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(404).json({ message: "Book not found (invalid ID)" });
+    }
+
+    const book = await Book.findById(bookId);
+>>>>>>> 42e207806973fdbc61b051bfc1f59e497d2b4c40
     if (!book) {
       return res.status(404).json({ message: "Book not found." });
     }

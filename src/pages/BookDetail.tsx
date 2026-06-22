@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Star, BookOpen, Bell, Clock, Users,
-  MessageSquare, ThumbsUp, Send, Loader2
+  MessageSquare, ThumbsUp, Send, Loader2, BookmarkPlus
 } from 'lucide-react';
-import { books } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 const API = 'https://bookhive-95y5.onrender.com';
 
@@ -14,9 +15,8 @@ export default function BookDetail() {
   const { id } = useParams();
   const { user } = useAuth();
 
-  // Use mockData for book metadata (title, author, copies etc.)
-  const book = books.find(b => b.id === id);
-
+  const [book, setBook] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [notifyMe, setNotifyMe] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(0);
@@ -25,6 +25,39 @@ export default function BookDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [reserveLoading, setReserveLoading] = useState(false);
+
+  const [showScanner, setShowScanner] = useState(false);
+
+  const fetchBookDetails = () => {
+    if (!id) return;
+    setLoading(true);
+    fetch(`${API}/api/books/${id}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Book not found');
+        return res.json();
+      })
+      .then(data => {
+        setBook({
+          ...data,
+          id: data._id,
+          availableCopies: data.availableCopies !== undefined ? data.availableCopies : data.available_copies,
+          totalCopies: data.totalCopies !== undefined ? data.totalCopies : data.total_copies,
+          rating: data.rating || 4.0,
+          tags: data.tags || []
+        });
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  // Fetch book details
+  useEffect(() => {
+    fetchBookDetails();
+  }, [id]);
 
   // Fetch live reviews for this book
   useEffect(() => {
@@ -38,6 +71,14 @@ export default function BookDetail() {
       })
       .catch(() => setLoadingReviews(false));
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-32">
+        <Loader2 className="w-10 h-10 text-muted-foreground animate-spin" />
+      </div>
+    );
+  }
 
   if (!book) {
     return (
@@ -97,6 +138,52 @@ export default function BookDetail() {
       setSubmitting(false);
     }
   };
+
+  const handleCheckout = () => {
+    setActionError('');
+    setActionMessage('');
+    if (!user) {
+      setActionError('You must be logged in to checkout a book.');
+      return;
+    }
+    setShowScanner(true);
+  };
+
+  const handleScannerSuccess = (data: any) => {
+    setShowScanner(false);
+    setActionMessage('Book checked out successfully!');
+    fetchBookDetails(); // Refresh books counts
+  };
+
+  const handleReserve = async () => {
+    setActionError('');
+    setActionMessage('');
+    if (!user) {
+      setActionError('You must be logged in to reserve a book.');
+      return;
+    }
+    setReserveLoading(true);
+    try {
+      const res = await fetch(`${API}/api/reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: user._id || user.id, book_id: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.message || 'Failed to reserve book.');
+      } else {
+        setActionMessage('Book reserved successfully!');
+      }
+    } catch {
+      setActionError('Network error. Please try again.');
+    } finally {
+      setReserveLoading(false);
+    }
+  };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -164,20 +251,48 @@ export default function BookDetail() {
               </div>
             </div>
 
-            {!available && (
+            {actionError && (
+              <p className="text-destructive text-sm mt-4 text-center">{actionError}</p>
+            )}
+            {actionMessage && (
+              <p className="text-success text-sm mt-4 text-center">{actionMessage}</p>
+            )}
+
+            {available ? (
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setNotifyMe(true)}
-                disabled={notifyMe}
-                className={`mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
-                  notifyMe
-                    ? 'bg-muted text-muted-foreground cursor-default'
-                    : 'gradient-gold text-primary-foreground hover:opacity-90 active:scale-95'
-                }`}
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 disabled:opacity-70"
               >
-                <Bell className="w-4 h-4" />
-                {notifyMe ? 'You will be notified!' : 'Notify Me When Available'}
+                {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
+                Checkout Now
               </motion.button>
+            ) : (
+              <div className="flex flex-col gap-2 mt-4">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleReserve}
+                  disabled={reserveLoading}
+                  className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-secondary text-secondary-foreground hover:bg-secondary/90 active:scale-95 disabled:opacity-70"
+                >
+                  {reserveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
+                  Reserve
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setNotifyMe(true)}
+                  disabled={notifyMe}
+                  className={`w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                    notifyMe
+                      ? 'bg-muted text-muted-foreground cursor-default'
+                      : 'border border-border bg-background hover:bg-accent hover:text-accent-foreground text-foreground active:scale-95'
+                  }`}
+                >
+                  <Bell className="w-4 h-4" />
+                  {notifyMe ? 'You will be notified!' : 'Notify Me When Available'}
+                </motion.button>
+              </div>
             )}
           </div>
 
@@ -276,6 +391,23 @@ export default function BookDetail() {
           )}
         </div>
       </section>
+      {/* Barcode Scanner Modal Modal Overlay */}
+      {showScanner && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md relative"
+          >
+            <BarcodeScanner 
+              onSuccess={handleScannerSuccess} 
+              onError={(err) => setActionError(err)} 
+              onClose={() => setShowScanner(false)}
+            />
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

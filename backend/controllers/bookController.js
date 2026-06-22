@@ -24,6 +24,26 @@ const getAllBooks = async (req, res) => {
   }
 };
 
+// @desc    Get book by ID
+// @route   GET /api/books/:id
+// @access  Public
+const getBookById = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    console.log("getBookById called, id:", req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: "Book not found (invalid ID)" });
+    }
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    res.json(book);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Create a new book
 // @route   POST /api/books
 // @access  Private/Admin
@@ -124,6 +144,7 @@ const updateBook = async (req, res) => {
 
 module.exports = {
   getAllBooks,
+  getBookById,
   createBook,
   getBookBySlug,
   updateBook,
