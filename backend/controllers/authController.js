@@ -29,7 +29,16 @@ const registerUser = async (req, res) => {
       fineAmount:         0,
     });
 
-    await newUser.save();
+    console.log("----- DB DEBUG LOGS -----");
+    const mongoose = require("mongoose");
+    console.log("Connected Database Name:", mongoose.connection.db.databaseName);
+    console.log("Collection Name:", User.collection.name);
+    console.log("User Document Before Save:", newUser.toObject());
+
+    const saveResult = await newUser.save();
+    console.log("Save Result:", saveResult.toObject());
+    console.log("-------------------------");
+
     res.status(201).json({ message: "User Registered Successfully ✅" });
 
   } catch (error) {
