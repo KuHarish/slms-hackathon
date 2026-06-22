@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     setLoadingUsers(true);
-    fetch('https://bookhive-95y5.onrender.com/api/auth/users', {
+    fetch(API_URL + '/auth/users', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
       .catch(() => setLoadingUsers(false));
 
     // Fetch books
-    fetch('http://localhost:3000/api/books')
+    fetch(API_URL + '/books')
       .then(res => res.json())
       .then(data => {
         const mapped = Array.isArray(data) ? data.map((b: any) => ({
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
       .catch(console.error);
 
     // Fetch transactions
-    fetch('http://localhost:3000/api/transactions', {
+    fetch(API_URL + '/transactions', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
   const handleSaveRole = async (userId: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`https://bookhive-95y5.onrender.com/api/auth/users/${userId}/role`, {
+      const res = await fetch(`${API_URL}/auth/users/${userId}/role`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

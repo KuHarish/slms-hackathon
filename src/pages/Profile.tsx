@@ -8,7 +8,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { STATUS_COLORS } from '@/lib/colors';
 
-const API = "http://localhost:3000/api";
+import { API_URL } from '@/config';
+const API = API_URL;
 
 const badges = [
   { id: 'b1', name: 'Bookworm', description: 'Read 10 books', icon: '🐛', requiredTokens: 100 },

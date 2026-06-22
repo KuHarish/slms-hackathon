@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User, UserRole } from '@/types/library';
 
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch('https://bookhive-95y5.onrender.com/api/auth/me', {
+      const res = await fetch(API_URL + '/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {

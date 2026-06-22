@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookMarked, UserPlus, Loader2 } from 'lucide-react';
@@ -28,7 +29,7 @@ export default function SignupUser() {
     setLoading(true);
 
     try {
-      const res = await fetch('https://bookhive-95y5.onrender.com/api/auth/register', {
+      const res = await fetch(API_URL + '/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmedName, email, password, role: 'user' })

@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookMarked, LogIn, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
@@ -34,7 +35,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch('https://bookhive-95y5.onrender.com/api/auth/login', {
+      const res = await fetch(API_URL + '/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

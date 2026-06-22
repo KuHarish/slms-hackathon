@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState } from 'react';
 import { useZxing } from 'react-zxing';
 import { Camera, CameraOff, RefreshCw, AlertCircle, CheckCircle2, Loader2, Book, X } from 'lucide-react';
@@ -69,7 +70,7 @@ export default function BarcodeScanner({ onSuccess, onError, onClose }: BarcodeS
         throw new Error("User not logged in. Please sign in first.");
       }
 
-      const res = await fetch('http://localhost:3000/api/checkout', {
+      const res = await fetch(API_URL + '/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

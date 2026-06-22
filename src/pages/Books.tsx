@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, BookOpen, Loader2 } from 'lucide-react';
-const API = "http://localhost:3000/api";
+import { API_URL } from '@/config';
+const API = API_URL;
 import BookCard from '@/components/BookCard';
 import type { BookCategory } from '@/types/library';
 

@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState } from 'react';
 import { BookPlus, Loader2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ export default function AddBookForm({ onSuccess, onCancel, token }: AddBookFormP
 
     try {
       const authToken = token || localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/books', {
+      const res = await fetch(API_URL + '/books', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

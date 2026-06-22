@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState, useEffect } from 'react';
 import { Edit2, Loader2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,7 @@ export default function EditBookModal({ book, onSuccess, onCancel, token }: Edit
 
     try {
       const authToken = token || localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/api/books/${book.id}`, {
+      const res = await fetch(`${API_URL}/books/${book.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

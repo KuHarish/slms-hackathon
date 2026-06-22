@@ -1,3 +1,4 @@
+import { API_URL } from '@/config';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem('token');
-      fetch('https://bookhive-95y5.onrender.com/api/notifications', {
+      fetch(API_URL + '/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())

@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import BookCard from '@/components/BookCard';
 
-const API = "http://localhost:3000/api";
+import { API_URL } from '@/config';
+const API = API_URL;
 
 // Framer Motion stagger variants
 const containerVariants = {

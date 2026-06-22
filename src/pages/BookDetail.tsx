@@ -9,7 +9,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import BarcodeScanner from '@/components/BarcodeScanner';
 
-const API = 'https://bookhive-95y5.onrender.com';
+import { API_URL } from '@/config';
+const API = API_URL.replace('/api', ''); // Temp fix to maintain compat
 
 export default function BookDetail() {
   const { id } = useParams();
