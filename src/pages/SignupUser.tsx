@@ -53,7 +53,7 @@ export default function SignupUser() {
           <div className="w-14 h-14 rounded-xl gradient-gold flex items-center justify-center mx-auto">
             <BookMarked className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="font-display text-2xl text-foreground">Book Hive</h1>
+          <h1 className="font-display text-2xl text-foreground">ATLAS</h1>
           <p className="text-sm text-muted-foreground">Create a new Student account</p>
         </div>
 

@@ -1,7 +1,7 @@
 /**
  * colors.ts — Centralized Color Token Reference
  *
- * This file documents the design system color palette for the Book Hive app.
+ * This file documents the design system color palette for the ATLAS app.
  * All colors are driven by CSS variables defined in index.css and mapped to
  * Tailwind tokens in tailwind.config.ts.
  *

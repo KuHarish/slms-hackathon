@@ -110,7 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <BookMarked className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display text-lg text-sidebar-foreground leading-tight tracking-tight">Book Hive</h1>
+              <h1 className="font-display text-lg text-sidebar-foreground leading-tight tracking-tight">ATLAS</h1>
               <p className="text-[11px] text-sidebar-foreground/50 tracking-wide uppercase font-medium">Library</p>
             </div>
           </Link>
@@ -172,7 +172,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center">
                     <BookMarked className="w-4 h-4 text-primary-foreground" />
                   </div>
-                  <span className="font-display text-sidebar-foreground">Book Hive</span>
+                  <span className="font-display text-sidebar-foreground">ATLAS</span>
                 </div>
                 <button
                   onClick={() => setSidebarOpen(false)}
