@@ -80,6 +80,16 @@ export const STATUS_COLORS = {
     icon:   'text-accent',
     bg:     'bg-accent/10',
   },
+  issued: {
+    badge:  'badge-accent',
+    icon:   'text-accent',
+    bg:     'bg-accent/10',
+  },
+  reserved: {
+    badge:  'badge-warning',
+    icon:   'text-warning',
+    bg:     'bg-warning/10',
+  },
   overdue: {
     badge:  'badge-danger',
     icon:   'text-destructive',

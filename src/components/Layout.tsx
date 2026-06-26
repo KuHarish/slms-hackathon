@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, User, Users, Bell, 
-  Menu, X, BookMarked, LogOut, Sun, Moon, Crown
+  Menu, X, BookMarked, LogOut, Sun, Moon, Crown, BookPlus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,6 +12,7 @@ const allNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['user', 'admin'] as const },
   { path: '/books', label: 'Catalog', icon: BookOpen, roles: ['user', 'admin'] as const },
   { path: '/community', label: 'Community', icon: Users, roles: ['user', 'admin'] as const },
+  { path: '/request-book', label: 'Request Book', icon: BookPlus, roles: ['user', 'admin'] as const },
   { path: '/profile', label: 'Profile', icon: User, roles: ['user', 'admin'] as const },
   { path: '/admin', label: 'Admin', icon: Crown, roles: ['admin'] as const },
 ];
@@ -270,7 +271,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
                     <h3 className="font-semibold text-sm text-foreground">Notifications</h3>
                     {unreadCount > 0 && (
-                      <span className="text-xs text-accent cursor-pointer hover:underline font-medium">Mark all read</span>
+                      <span 
+                        className="text-xs text-accent cursor-pointer hover:underline font-medium"
+                        onClick={() => {
+                          fetch(API_URL + '/notifications/read-all', {
+                            method: 'PUT',
+                            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                          }).then(() => {
+                            setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+                          }).catch(console.error);
+                        }}
+                      >Mark all read</span>
                     )}
                   </div>
                   <div className="max-h-80 overflow-y-auto p-2">
@@ -283,6 +294,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       notifications.map((notif, i) => (
                         <div
                           key={notif._id || notif.id || i}
+                          onClick={() => {
+                            if (!notif.isRead) {
+                              fetch(API_URL + `/notifications/${notif._id || notif.id}/read`, {
+                                method: 'PUT',
+                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                              }).then(() => {
+                                setNotifications(notifications.map(n => n === notif ? { ...n, isRead: true } : n));
+                              }).catch(console.error);
+                            }
+                          }}
                           className={`p-3 rounded-xl mb-1 flex items-start gap-3 transition-colors cursor-pointer ${
                             !notif.isRead ? 'bg-accent/5 hover:bg-accent/10' : 'hover:bg-muted/50'
                           }`}

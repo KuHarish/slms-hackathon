@@ -18,7 +18,12 @@ export default function BookDetail() {
 
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [notifyMe, setNotifyMe] = useState(false);
+  const [notifyMe, setNotifyMe] = useState(() => {
+    if (typeof window !== 'undefined' && id) {
+      return localStorage.getItem(`notify_${id}`) === 'true';
+    }
+    return false;
+  });
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -259,30 +264,38 @@ export default function BookDetail() {
               <p className="text-success text-sm mt-4 text-center">{actionMessage}</p>
             )}
 
-            {available ? (
+            <div className="flex flex-col gap-2 mt-4">
+              {available && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
+                  className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 disabled:opacity-70"
+                >
+                  {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
+                  Checkout Now
+                </motion.button>
+              )}
+              
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={handleCheckout}
-                disabled={checkoutLoading}
-                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 disabled:opacity-70"
+                onClick={handleReserve}
+                disabled={reserveLoading}
+                className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-secondary text-secondary-foreground hover:bg-secondary/90 active:scale-95 disabled:opacity-70"
               >
-                {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
-                Checkout Now
+                {reserveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
+                {available ? "Reserve (1 Hour Hold)" : "Join Reservation Queue"}
               </motion.button>
-            ) : (
-              <div className="flex flex-col gap-2 mt-4">
+
+              {!available && (
                 <motion.button
                   whileTap={{ scale: 0.97 }}
-                  onClick={handleReserve}
-                  disabled={reserveLoading}
-                  className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-secondary text-secondary-foreground hover:bg-secondary/90 active:scale-95 disabled:opacity-70"
-                >
-                  {reserveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
-                  Reserve
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setNotifyMe(true)}
+                  onClick={() => {
+                    setNotifyMe(true);
+                    if (id) localStorage.setItem(`notify_${id}`, 'true');
+                    setActionMessage('You will be notified when this book becomes available!');
+                    setActionError('');
+                  }}
                   disabled={notifyMe}
                   className={`w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                     notifyMe
@@ -293,11 +306,14 @@ export default function BookDetail() {
                   <Bell className="w-4 h-4" />
                   {notifyMe ? 'You will be notified!' : 'Notify Me When Available'}
                 </motion.button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">ISBN: {book.isbn}</p>
+          <div className="flex flex-col gap-1 mt-6">
+            <p className="text-xs text-muted-foreground font-mono">ISBN: {book.isbn}</p>
+            {book.bookId && <p className="text-xs text-muted-foreground font-mono">Book ID: {book.bookId}</p>}
+          </div>
         </div>
       </div>
 

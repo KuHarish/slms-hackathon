@@ -64,7 +64,10 @@ export default function BookCard({ book }: { book: Book }) {
           {book.title}
         </h3>
 
-        <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+        <div className="flex justify-between items-center">
+          <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+          {book.bookId && <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 rounded">{book.bookId}</p>}
+        </div>
 
         <div className="mt-auto pt-2 flex items-center justify-between">
           {/* Category pill */}

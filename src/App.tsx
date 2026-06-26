@@ -13,6 +13,7 @@ import BookDetail from "@/pages/BookDetail";
 import Profile from "@/pages/Profile";
 import Community from "@/pages/Community";
 import AdminDashboard from "@/pages/AdminDashboard";
+import RequestBook from "@/pages/RequestBook";
 import NotFound from "./pages/NotFound";
 import SignupUser from "./pages/SignupUser";
 import SignupAdmin from "./pages/SignupAdmin";
@@ -34,6 +35,7 @@ function AuthenticatedRoutes() {
         <Route path="/books/:id" element={<BookDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/request-book" element={<RequestBook />} />
 
         <Route path="/admin" element={
           <RoleGuard allowedRoles={['admin']}>

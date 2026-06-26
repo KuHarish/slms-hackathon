@@ -26,11 +26,12 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [books, setBooks] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [bookRequests, setBookRequests] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
 
   // App state & Tabs
-  const [activeTab, setActiveTab] = useState<'users' | 'books'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'books' | 'requests'>('users');
   const [showAddBook, setShowAddBook] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -69,6 +70,16 @@ export default function AdminDashboard() {
       .then(res => res.json())
       .then(data => {
         setTransactions(Array.isArray(data) ? data : []);
+      })
+      .catch(console.error);
+
+    // Fetch book requests
+    fetch(API_URL + '/book-requests', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setBookRequests(Array.isArray(data) ? data : []);
       })
       .catch(console.error)
       .finally(() => setLoadingData(false));
@@ -132,6 +143,25 @@ export default function AdminDashboard() {
     setEditingUser(null);
   };
 
+  const handleRequestUpdate = async (id: string, status: 'approved' | 'rejected') => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/book-requests/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        setBookRequests(prev => prev.map(r => r._id === id ? { ...r, status } : r));
+      }
+    } catch (err) {
+      console.error('Failed to update book request:', err);
+    }
+  };
+
   const roleColors: Record<UserRole, string> = {
     admin: 'bg-destructive/10 text-destructive border-destructive/20',
     user: 'bg-primary/10 text-primary border-primary/20',
@@ -175,7 +205,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border gap-1">
+      <div className="flex border-b border-border gap-1 overflow-x-auto pb-[1px]">
         <button
           onClick={() => { setActiveTab('users'); setSearchQuery(''); }}
           className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all duration-200 relative rounded-t-lg ${
@@ -201,6 +231,20 @@ export default function AdminDashboard() {
           <BookCopy className="w-4 h-4" />
           Books
           {activeTab === 'books' && (
+            <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+          )}
+        </button>
+        <button
+          onClick={() => { setActiveTab('requests'); setSearchQuery(''); }}
+          className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all duration-200 relative rounded-t-lg ${
+            activeTab === 'requests'
+              ? 'text-primary bg-primary/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          Requests
+          {activeTab === 'requests' && (
             <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
           )}
         </button>
@@ -474,6 +518,81 @@ export default function AdminDashboard() {
           />
         )}
       </section>
+      )}
+      {activeTab === 'requests' && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl text-foreground">Book Requests</h2>
+          </div>
+
+          <div className="bg-card rounded-xl border shadow-card overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Book Details</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingData ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Loading requests...
+                    </TableCell>
+                  </TableRow>
+                ) : bookRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No book requests found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  bookRequests.map(req => (
+                    <TableRow key={req._id}>
+                      <TableCell>
+                        <div className="font-medium text-card-foreground">{req.user?.name || 'Unknown'}</div>
+                        <div className="text-xs text-muted-foreground">{req.user?.email || 'N/A'}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-card-foreground">{req.title}</div>
+                        <div className="text-xs text-muted-foreground">by {req.author}</div>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={req.reason}>
+                        {req.reason}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          req.status === 'approved' ? 'bg-success/10 text-success border-success/20' :
+                          req.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          'bg-warning/10 text-warning border-warning/20'
+                        }>
+                          {req.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {req.status === 'pending' ? (
+                          <>
+                            <Button size="sm" variant="outline" className="h-8 hover:bg-success/10 hover:text-success border-border" onClick={() => handleRequestUpdate(req._id, 'approved')}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8 hover:bg-destructive/10 hover:text-destructive border-border" onClick={() => handleRequestUpdate(req._id, 'rejected')}>
+                              Reject
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Processed</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { useZxing } from 'react-zxing';
 import { Camera, CameraOff, RefreshCw, AlertCircle, CheckCircle2, Loader2, Book, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BarcodeScannerProps {
   onSuccess?: (data: any) => void;
@@ -13,6 +14,7 @@ interface BarcodeScannerProps {
 
 export default function BarcodeScanner({ onSuccess, onError, onClose }: BarcodeScannerProps) {
   // State requirements from prompt
+  const { user } = useAuth();
   const [scannedCode, setScannedCode] = useState<string>('');
   const [manualBookId, setManualBookId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -65,7 +67,7 @@ export default function BarcodeScanner({ onSuccess, onError, onClose }: BarcodeS
     setSuccess('');
 
     try {
-      const user_id = localStorage.getItem("user_id");
+      const user_id = user?._id || user?.id;
       if (!user_id) {
         throw new Error("User not logged in. Please sign in first.");
       }

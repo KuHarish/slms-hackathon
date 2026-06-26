@@ -47,8 +47,35 @@ const createNotification = async (req, res) => {
     }
 };
 
+const createInternalNotification = async (userId, title, message, type = 'info') => {
+    try {
+        const notification = new Notification({
+            user: userId,
+            title,
+            message,
+            type
+        });
+        await notification.save();
+        return notification;
+    } catch (error) {
+        console.error("Error creating internal notification:", error);
+    }
+};
+
+const markAllAsRead = async (req, res) => {
+    try {
+        await Notification.updateMany({ user: req.user._id, isRead: false }, { isRead: true });
+        res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 module.exports = {
     getNotifications,
     markAsRead,
-    createNotification
+    markAllAsRead,
+    createNotification,
+    createInternalNotification
 };

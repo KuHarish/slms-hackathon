@@ -74,8 +74,13 @@ const createBook = async (req, res) => {
       return res.status(400).json({ message: "Book with this ISBN already exists" });
     }
 
+    // Auto-generate bookId
+    const count = await Book.countDocuments();
+    const bookId = `BK${String(count + 1).padStart(4, '0')}`;
+
     // Creating the book
     const book = await Book.create({
+      bookId,
       title,
       author,
       isbn,

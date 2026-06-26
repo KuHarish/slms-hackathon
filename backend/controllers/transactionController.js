@@ -1,7 +1,9 @@
 const User = require('../models/User');
 const Book = require('../models/Book');
 const Transaction = require('../models/Transaction'); // Assuming Transaction model exists as per prompt
+const TokenTransaction = require('../models/TokenTransaction');
 const { hasActiveTransaction } = require('../utils/transactionUtils');
+const { createInternalNotification } = require('./notificationController');
 
 exports.checkoutBook = async (req, res) => {
   try {
@@ -19,29 +21,43 @@ exports.checkoutBook = async (req, res) => {
 
     // 2. Check if book exists and available_copies > 0
     const mongoose = require("mongoose");
-    if (!mongoose.Types.ObjectId.isValid(book_id)) {
-      return res.status(404).json({ message: "Book not found (invalid ID)" });
-    }
+    
     if (!mongoose.Types.ObjectId.isValid(user_id)) {
       return res.status(404).json({ message: "User not found (invalid ID)" });
     }
 
-    const book = await Book.findById(book_id);
+    let book = null;
+    if (mongoose.Types.ObjectId.isValid(book_id)) {
+      book = await Book.findById(book_id);
+    }
+    if (!book) {
+      book = await Book.findOne({ bookId: book_id });
+    }
+
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
     }
-    if (book.availableCopies !== undefined) {
-      // Use the actual schema field `availableCopies` (from previous file inspection) if applicable,
-      // but the prompt says available_copies > 0. Let's gracefully support both.
-      if (book.availableCopies <= 0) {
+    
+    const actualBookObjectId = book._id;
+
+    const existingReservation = await Transaction.findOne({
+      $or: [{ user: user_id }, { user_id: user_id }],
+      $or: [{ book: actualBookObjectId }, { book_id: actualBookObjectId }],
+      status: "reserved"
+    });
+
+    if (!existingReservation) {
+      if (book.availableCopies !== undefined) {
+        if (book.availableCopies <= 0) {
+          return res.status(400).json({ message: "Book is not available for checkout" });
+        }
+      } else if (book.available_copies !== undefined && book.available_copies <= 0) {
         return res.status(400).json({ message: "Book is not available for checkout" });
       }
-    } else if (book.available_copies !== undefined && book.available_copies <= 0) {
-      return res.status(400).json({ message: "Book is not available for checkout" });
     }
 
     // 3. Prevent user from checking out the same book again if already issued and not returned
-    const isActive = await hasActiveTransaction(user_id, book_id);
+    const isActive = await hasActiveTransaction(user_id, actualBookObjectId);
     if (isActive) {
       return res.status(400).json({ message: "You have already checked out this book and not returned it" });
     }
@@ -57,32 +73,40 @@ exports.checkoutBook = async (req, res) => {
       return res.status(403).json({ message: "Trust score is below 50. You can only have 1 active book checked out at a time." });
     }
 
-    // 5. Create new transaction
+    // 5. Create or update transaction
     const checkoutDate = new Date();
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 7);
 
-    const newTransaction = new Transaction({
-      user_id,
-      book_id,
-      checkout_date: checkoutDate,
-      due_date: dueDate,
-      status: "issued"
-    });
-    // Add alternatives for mongoose schema references
-    newTransaction.user = user_id;
-    newTransaction.book = book_id;
+    let newTransaction;
+    if (existingReservation) {
+      existingReservation.status = "issued";
+      existingReservation.checkout_date = checkoutDate;
+      existingReservation.due_date = dueDate;
+      existingReservation.reservation_expiry = undefined;
+      await existingReservation.save();
+      newTransaction = existingReservation;
+    } else {
+      newTransaction = new Transaction({
+        user_id,
+        book_id: actualBookObjectId,
+        user: user_id,
+        book: actualBookObjectId,
+        checkout_date: checkoutDate,
+        due_date: dueDate,
+        status: "issued"
+      });
+      await newTransaction.save();
 
-    await newTransaction.save();
-
-    // 6. Decrease book available copies
-    if (book.availableCopies !== undefined) {
-      book.availableCopies -= 1;
+      // Decrease book available copies only if not previously reserved
+      if (book.availableCopies !== undefined) {
+        book.availableCopies -= 1;
+      }
+      if (book.available_copies !== undefined) {
+        book.available_copies -= 1;
+      }
+      await book.save();
     }
-    if (book.available_copies !== undefined) {
-      book.available_copies -= 1;
-    }
-    await book.save();
 
     // 7. Increase user books taken count
     if (user.books_taken_count !== undefined) {
@@ -143,31 +167,83 @@ exports.returnBook = async (req, res) => {
     let daysLate = Math.floor(timeDiff / (1000 * 3600 * 24));
     
     let trustScoreChange = 0;
+    let fineAmount = 0;
+    let tokensEarned = 0;
 
     if (returnDate > dueDate) {
-      // Mark as overdue
-      transaction.status = "overdue";
+      // Mark as returned but with a late fine
+      transaction.status = "returned";
       
       if (daysLate > 7) {
         trustScoreChange = -10;
       } else {
         trustScoreChange = -5;
       }
+      
+      fineAmount = daysLate > 0 ? daysLate * 10 : 0;
+      
+      if (user.fineAmount !== undefined) user.fineAmount += fineAmount;
+      if (user.overdueBooksCount !== undefined) user.overdueBooksCount += 1;
+      
+      await createInternalNotification(
+        user._id, 
+        "Book Returned Late", 
+        `You returned "${book.title}" ${daysLate} days late. A fine of $${fineAmount} has been added.`,
+        "error"
+      );
     } else {
       transaction.status = "returned";
       trustScoreChange = 10;
+      tokensEarned = 50; // Standard reward for on-time return
+      
+      if (user.tokens !== undefined) user.tokens += tokensEarned;
+      
+      // Create Token Transaction
+      await TokenTransaction.create({
+        user: user._id,
+        type: 'earned',
+        amount: tokensEarned,
+        reason: `Returned "${book.title}" on time`
+      });
+      
+      await createInternalNotification(
+        user._id,
+        "Tokens Earned!",
+        `You earned ${tokensEarned} tokens for returning "${book.title}" on time!`,
+        "success"
+      );
     }
 
     await transaction.save();
 
-    // 4. Increase book available copies
-    if (book.availableCopies !== undefined) {
-      book.availableCopies += 1;
+    // 4. Process Reservation Queue
+    const queuedTransaction = await Transaction.findOne({
+      $or: [{ book: book._id }, { book_id: book._id }],
+      status: "queued"
+    }).sort({ createdAt: 1 });
+
+    if (queuedTransaction) {
+      queuedTransaction.status = "reserved";
+      queuedTransaction.reservation_expiry = new Date(Date.now() + 60 * 60 * 1000);
+      await queuedTransaction.save();
+
+      await createInternalNotification(
+        queuedTransaction.user || queuedTransaction.user_id,
+        "Reserved Book Available",
+        `Your reserved book "${book.title}" is now available! You have 1 hour to collect it.`,
+        "success"
+      );
+      // We do not increment availableCopies because it goes straight to the reserved user
+    } else {
+      // 4. Increase book available copies
+      if (book.availableCopies !== undefined) {
+        book.availableCopies += 1;
+      }
+      if (book.available_copies !== undefined) {
+        book.available_copies += 1;
+      }
+      await book.save();
     }
-    if (book.available_copies !== undefined) {
-      book.available_copies += 1;
-    }
-    await book.save();
 
     // 5. Update user trust score
     if (user.trust_score !== undefined) {
@@ -234,20 +310,20 @@ exports.reserveBook = async (req, res) => {
     const book = await Book.findById(book_id);
     if (!book) return res.status(404).json({ message: "Book not found" });
 
-    // Check if book has available copies (if it does, they should checkout, not reserve)
-    if ((book.availableCopies !== undefined && book.availableCopies > 0) ||
-        (book.available_copies !== undefined && book.available_copies > 0)) {
-      return res.status(400).json({ message: "Book is available for checkout, no need to reserve" });
-    }
-
-    // Check if already reserved or issued
+    // Check if already reserved, queued, or issued
     const existingTransaction = await Transaction.findOne({
       $or: [{ user: user_id, book: book_id }, { user_id: user_id, book_id: book_id }],
-      $or: [{ status: "reserved" }, { status: "issued" }]
+      status: { $in: ["reserved", "issued", "queued"] }
     });
     if (existingTransaction) {
-      return res.status(400).json({ message: "You have already checked out or reserved this book" });
+      return res.status(400).json({ message: "You have already checked out, reserved, or queued this book" });
     }
+
+    const available = (book.availableCopies !== undefined && book.availableCopies > 0) ||
+                      (book.available_copies !== undefined && book.available_copies > 0);
+
+    const status = available ? "reserved" : "queued";
+    const reservation_expiry = available ? new Date(Date.now() + 60 * 60 * 1000) : undefined;
 
     const newTransaction = new Transaction({
       user_id,
@@ -256,13 +332,27 @@ exports.reserveBook = async (req, res) => {
       book: book_id,
       checkout_date: new Date(),
       due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // arbitrary due date
-      status: "reserved"
+      status,
+      reservation_expiry
     });
 
     await newTransaction.save();
 
+    if (available) {
+      if (book.availableCopies !== undefined) book.availableCopies -= 1;
+      if (book.available_copies !== undefined) book.available_copies -= 1;
+      await book.save();
+    }
+
+    const { createInternalNotification } = require('./notificationController');
+    await createInternalNotification(
+      user_id,
+      available ? `You have reserved "${book.title}". You have 1 hour to collect it.` : `You have joined the waitlist for "${book.title}". You will be notified when it becomes available.`,
+      "reservation"
+    );
+
     return res.status(201).json({
-      message: "Book reserved successfully",
+      message: available ? "Book reserved successfully. You have 1 hour to collect it." : "Joined reservation queue successfully.",
       transaction: newTransaction
     });
 
@@ -301,5 +391,117 @@ exports.getAllTransactions = async (req, res) => {
   } catch (error) {
     console.error("Error in getAllTransactions:", error);
     return res.status(500).json({ message: "Server error fetching transactions", error: error.message });
+  }
+};
+
+exports.getUserTransactions = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const transactions = await Transaction.find({
+      $or: [{ user: user_id }, { user_id: user_id }]
+    })
+      .populate({
+        path: "book_id",
+        select: "title author isbn coverImage bookId",
+        strictPopulate: false
+      })
+      .populate({
+        path: "book",
+        select: "title author isbn coverImage bookId",
+        strictPopulate: false
+      })
+      .sort({ checkout_date: -1 });
+
+    return res.status(200).json(transactions);
+  } catch (error) {
+    console.error("Error in getUserTransactions:", error);
+    return res.status(500).json({ message: "Server error fetching user transactions", error: error.message });
+  }
+};
+
+exports.getUserReservedBooks = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const transactions = await Transaction.find({
+      $or: [{ user: user_id }, { user_id: user_id }],
+      status: { $in: ["reserved", "queued"] }
+    })
+      .populate({
+        path: "book_id",
+        select: "title author isbn coverImage bookId",
+        strictPopulate: false
+      })
+      .populate({
+        path: "book",
+        select: "title author isbn coverImage bookId",
+        strictPopulate: false
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(transactions);
+  } catch (error) {
+    console.error("Error in getUserReservedBooks:", error);
+    return res.status(500).json({ message: "Server error fetching user reserved books", error: error.message });
+  }
+};
+
+exports.cancelReservation = async (req, res) => {
+  try {
+    const { transaction_id } = req.body;
+    if (!transaction_id) return res.status(400).json({ message: "transaction_id is required" });
+
+    const transaction = await Transaction.findById(transaction_id);
+    if (!transaction) return res.status(404).json({ message: "Transaction not found" });
+
+    if (transaction.status !== "reserved" && transaction.status !== "queued") {
+      return res.status(400).json({ message: "Only reserved or queued books can be cancelled" });
+    }
+
+    if (transaction.status === "reserved") {
+      // Allow cancellation only if within 10 minutes of being reserved
+      // reservation_expiry is exactly 1 hour from when it was reserved.
+      const timeSinceReserved = Date.now() - (transaction.reservation_expiry.getTime() - 60 * 60 * 1000);
+      if (timeSinceReserved > 10 * 60 * 1000) {
+        return res.status(400).json({ message: "You can only cancel a reservation within the first 10 minutes." });
+      }
+    }
+
+    const previousStatus = transaction.status;
+    transaction.status = "cancelled";
+    await transaction.save();
+
+    if (previousStatus === "reserved") {
+      // Process queue to pass the reservation to the next user, or increment inventory
+      const book = await Book.findById(transaction.book || transaction.book_id);
+      if (book) {
+        const queuedTx = await Transaction.findOne({
+          $or: [{ book: book._id }, { book_id: book._id }],
+          status: "queued"
+        }).sort({ createdAt: 1 });
+
+        if (queuedTx) {
+          queuedTx.status = "reserved";
+          queuedTx.reservation_expiry = new Date(Date.now() + 60 * 60 * 1000);
+          await queuedTx.save();
+
+          const { createInternalNotification } = require('./notificationController');
+          await createInternalNotification(
+            queuedTx.user || queuedTx.user_id,
+            "Reserved Book Available",
+            `Your reserved book "${book.title}" is now available! You have 1 hour to collect it.`,
+            "success"
+          );
+        } else {
+          if (book.availableCopies !== undefined) book.availableCopies += 1;
+          if (book.available_copies !== undefined) book.available_copies += 1;
+          await book.save();
+        }
+      }
+    }
+
+    return res.status(200).json({ message: "Reservation cancelled successfully" });
+  } catch (error) {
+    console.error("Error cancelling reservation:", error);
+    return res.status(500).json({ message: "Server error cancelling reservation", error: error.message });
   }
 };

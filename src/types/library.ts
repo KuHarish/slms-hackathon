@@ -38,6 +38,7 @@ export interface Book {
   reviewCount: number;
   addedAt: string;
   tags: string[];
+  bookId?: string;
 }
 
 export type BookCategory =

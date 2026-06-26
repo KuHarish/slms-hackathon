@@ -25,8 +25,11 @@ const transactionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["issued", "returned", "overdue", "reserved"],
+      enum: ["issued", "returned", "overdue", "reserved", "queued", "cancelled"],
       default: "issued",
+    },
+    reservation_expiry: {
+      type: Date,
     },
   },
   { timestamps: true }
